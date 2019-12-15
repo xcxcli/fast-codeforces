@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name        Fast-Codeforces-dev
+// @name        Fast-Codeforces
 // @namespace   Violentmonkey Scripts
-// @version     0.2.0
+// @version     0.2.1
 // @match       *://codeforces.com/*
 // @match       *://codeforc.es/*
 // @match       *://codeforces.ml/*
@@ -46,8 +46,7 @@ function init_sub(){
 </form></div>`));
 	getsub();
 }
-var prolist=gets("problem"),focpro;
-if(prolist===void 0){puts("problem",[]);prolist=[];}
+var prolist=[],focpro;
 function showpro(ID){$("#fc-problem-menu-"+ID).addClass("focpro");$("#fc-problem-"+ID+",#fc-bar-problem-"+ID).show();}
 function hidepro(ID){$("#fc-problem-menu-"+ID).removeClass("focpro");$("#fc-problem-"+ID+",#fc-bar-problem-"+ID).hide();}
 function show_pro(){$("#fc-problem,#fc-bar-problem").show();$("#fc-menu-problem").css("background-color","#AAAAAA");}
@@ -133,7 +132,7 @@ function CreateEle(id){
 function showLogin(){
 	$("#fc-menu").html(`<a href="javascript:;" id="fc-start">开始使用Fast Codeforces</a>`);
 	$("#fc-start").click(function(){
-		if(confirm("您确认要使用Fast Codeforces?")===false)return;
+		if(confirm("Fast Codeforces需要使用您的CSRF-token，您确定要授权吗?")===false)return;
 		puts("using",true);alert("授权成功");showMain();
 	});
 }

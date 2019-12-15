@@ -4,6 +4,8 @@ Fast Codeforces是xcxxcx编写的一个脚本安装后，您不需要刷新，�
 
 您需要先安装Tampermonkey、Violentmonkey、Greasemonkey之类的脚本插件。
 
+**Fast Codeforces需要使用您在Codeforces上的CSRF-token，并保证只将其在您提交题目的时候使用。**
+
 greasyfolk上的链接：<https://greasyfork.org/zh-CN/scripts/393752-fast-codeforces>
 
 已知Bug:
