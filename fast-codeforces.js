@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name        Fast-Codeforces
+// @name        Fast-Codeforces-dev
 // @namespace   Violentmonkey Scripts
-// @version     0.1.0a
+// @version     0.2.0
 // @match       *://codeforces.com/*
 // @match       *://codeforc.es/*
 // @match       *://codeforces.ml/*
@@ -9,30 +9,51 @@
 // @author      xcxxcx
 // @require     https://code.jquery.com/jquery-3.4.1.min.js
 // ==/UserScript==
-
 const Name="fast-codeforces-",JPar=JSON.parse,JStr=JSON.stringify;
 function gets(dir){
-	if((Name+dir) in localStorage ===false)return void 0;
+	if((Name+dir) in localStorage ===false||localStorage[Name+dir]==="undefined")return void 0;
 	return JPar(localStorage[Name+dir]);
 }
-function puts(dir,val){if(val!==void 0)localStorage[Name+dir]=JStr(val);}
-var user=$(".lang-chooser>div:eq(1)>a:eq(0)").html();
-var prolist=gets("problem"),focpro;
-if(prolist===void 0){puts("problem",[]);prolist=[];}
-function hidepro(ID){$("#fc-problem-menu-"+ID).removeClass("focpro");$("#fc-problem-"+ID+",#fc-bar-problem-"+ID).hide();}
-function showpro(ID){$("#fc-problem-menu-"+ID).addClass("focpro");$("#fc-problem-"+ID+",#fc-bar-problem-"+ID).show();}
-function hidepro_(){$("#fc-problem,#fc-bar-problem").hide();$("#pageContent,#pre-bar").show();$("#fc-menu-problem").css("background-color","white");}
-function showpro_(){$("#fc-problem,#fc-bar-problem").show();$("#pageContent,#pre-bar").hide();$("#fc-menu-problem").css("background-color","#AAAAAA");}
-function getpro(url){
-	var x=$.ajax({
+function puts(dir,val){
+	if(val!==void 0)localStorage[Name+dir]=JStr(val);
+	else localStorage[Name+dir]="undefined";
+}
+var user=$(".lang-chooser>div:eq(1)>a:eq(0)").html(),user_csrf=$("[name=X-Csrf-Token]").attr("content");
+function Ajax(url){
+	return $.ajax({
 		async:false,
 		method:"GET",
-		url:"/problemset/problem/"+url,
+		url:url,
 		data:{},
 		success:function(e){return e;},
 		error:function(e){console.log("ERROR");return e;}
-	});
-	x=$(x.responseText);
+	}).responseText;
+}
+function show_pre(){$("#pageContent,#pre-bar").show();}
+function hide_pre(){$("#pageContent,#pre-bar").hide();}
+function show_sub(){$("#fc-submit").show();$("#fc-menu-submit").css("background-color","#AAAAAA");}
+function hide_sub(){$("#fc-submit").hide();$("#fc-menu-submit").css("background-color","white");}
+function getsub(){
+	var sub=gets("submit");
+	if(sub!==void 0){$("#fc-submit-form").html(sub);return;}
+	sub=$(Ajax("/problemset/submit")).find(".submit-form");
+	sub.find(".aceEditorTd").html(`<textarea style="width:600px;height:300px;resize:none" name="source"></textarea>`);
+	$("#fc-submit-form").html(sub.html());puts("submit",sub.html());
+}
+function init_sub(){
+	$("#pageContent").after($(`<div id="fc-submit" class="content-with-sidebar" style="display:none;margin:1em;padding-top:1em;min-height:20em">
+<form id="fc-submit-form" method="post" action="/problemset/submit?csrf_token=`+user_csrf+`" enctype="multipart/form-data" target="_blank">
+</form></div>`));
+	getsub();
+}
+var prolist=gets("problem"),focpro;
+if(prolist===void 0){puts("problem",[]);prolist=[];}
+function showpro(ID){$("#fc-problem-menu-"+ID).addClass("focpro");$("#fc-problem-"+ID+",#fc-bar-problem-"+ID).show();}
+function hidepro(ID){$("#fc-problem-menu-"+ID).removeClass("focpro");$("#fc-problem-"+ID+",#fc-bar-problem-"+ID).hide();}
+function show_pro(){$("#fc-problem,#fc-bar-problem").show();$("#fc-menu-problem").css("background-color","#AAAAAA");}
+function hide_pro(){$("#fc-problem,#fc-bar-problem").hide();$("#fc-menu-problem").css("background-color","white");}
+function getpro(url){
+	x=$(Ajax("/problemset/problem/"+url));
 	return [x.find(`.problem-statement`),x.find(`#sidebar`)];
 }
 function addpro(x,y){
@@ -67,12 +88,8 @@ function newpro(){
 	if(parseInt(ID)!==ID){alert("请输入正确的题号");return;}
 	addpro(ID,A);
 }
-function func_pro(){
-	if($("#fc-problem").css("display")==="none")showpro_();
-	else hidepro_();
-}
 function init_pro(){
-	$("#pageContent").after(`<div id="fc-problem" class="content-with-sidebar" style="display:none;margin:1em;padding-top:1em;min-height:20em">
+	$("#pageContent").after($(`<div id="fc-problem" class="content-with-sidebar" style="display:none;margin:1em;padding-top:1em;min-height:20em">
 <div class="second-level-menu">
 	<style>
 		.focpro{background-color:grey;}
@@ -80,13 +97,12 @@ function init_pro(){
 	</style>
 	<ul class="second-level-menu-list" id="fc-problem-menu">
 		<li id="fc-problem-menu-add"><a>+add problem</a></li>
-		<li id="fc-problem-menu-close"><a>-hide window</a></li>
 	</ul>
 </div>
 <div class="problemindexholder">
 	<div class="ttypography" id="fc-problem-contain"></div>
 </div>
-</div>`);
+</div>`));
 	var link=$("link"),sideCSS=false,statCSS;
 	for(var i=0;i<link.leng;++i){
 		switch($(link[i]).attr("href")){
@@ -98,14 +114,21 @@ function init_pro(){
 	if(!statCSS)$("head").append($(`<link rel="stylesheet" href="//sta.codeforces.com/s/31021/css/status.css"/>`));
 	$("#fc-bar-menu").after(`<div id="fc-bar-problem" style="display:none"></div>`);
 	$("#fc-problem-menu-add").click(newpro);
-	$("#fc-problem-menu-close").click(hidepro_);
 }
-var funclist={"problem":{name:"查看题目",init:init_pro,func:func_pro}};
-var list=["problem"],len=list.length;
+var eles={
+	"problem":{name:"查看题目",init:init_pro,func:function(){},hide:hide_pro,show:show_pro},
+	"submit":{name:"提交代码",init:init_sub,func:function(){},hide:hide_sub,show:show_sub},
+};
+var list=["problem","submit"],len=list.length,ele="pre";
 function CreateEle(id){
-	var obj=funclist[id];obj.init();
-	$("#fc-stop").before($(`<a id="fc-menu-`+id+`" style="border-radius:3px">`+obj.name+`</a><br/>`));
-	$("#fc-menu-"+id).click(obj.func);
+	var obj=eles[id];obj.init();
+	$("#fc-stop").before($(`<a id="fc-menu-`+id+`" style="border-radius:3px;background-color:white">`+obj.name+`</a><br/>`));
+	$("#fc-menu-"+id).click(function(){
+		var ID=$(this).attr("id").substr(8);eles[ID].func();
+		if(ele===ID){eles[ID].hide();show_pre();ele="pre";}
+		else if(ele==="pre"){hide_pre();eles[ID].show();ele=ID;}
+		else{eles[ele].hide();eles[ID].show();ele=ID;}
+	});
 }
 function showLogin(){
 	$("#fc-menu").html(`<a href="javascript:;" id="fc-start">开始使用Fast Codeforces</a>`);
@@ -119,6 +142,7 @@ function showMain(){
 	$("#fc-stop").click(function(){
 		if(confirm("您确认要停止使用Fast Codeforces?")===false)return;
 		puts("using",false);alert("Fast Codeforces已停止");showLogin();
+		$("#fc-problem").remove();$("#fc-submit").remove();
 	});
 	for(var i=0;i<len;++i)CreateEle(list[i]);
 }
