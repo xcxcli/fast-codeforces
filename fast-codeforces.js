@@ -1,15 +1,17 @@
 // ==UserScript==
-// @name        Fast-Codeforces
-// @namespace   Violentmonkey Scripts
-// @version     0.2.1
+// @name        Fast-Codeforces-dev
+// @namespace   xcxxcx
+// @version     0.2.2
 // @match       *://codeforces.com/*
 // @match       *://codeforc.es/*
 // @match       *://codeforces.ml/*
 // @description 使您更方便地使用Codeforces
-// @author      xcxxcx
 // @require     https://code.jquery.com/jquery-3.4.1.min.js
+// @author      xcxxcx
 // ==/UserScript==
-const Name="fast-codeforces-",JPar=JSON.parse,JStr=JSON.stringify;
+var $=unsafeWindow.jQuery,math=unsafeWindow.MathJax;
+var Name="fast-codeforces-",JPar=JSON.parse,JStr=JSON.stringify;
+var tcount=[],tsum=0;
 function gets(dir){
 	if((Name+dir) in localStorage ===false||localStorage[Name+dir]==="undefined")return void 0;
 	return JPar(localStorage[Name+dir]);
@@ -19,15 +21,13 @@ function puts(dir,val){
 	else localStorage[Name+dir]="undefined";
 }
 var user=$(".lang-chooser>div:eq(1)>a:eq(0)").html(),user_csrf=$("[name=X-Csrf-Token]").attr("content");
-function Ajax(url){
-	return $.ajax({
-		async:false,
-		method:"GET",
-		url:url,
-		data:{},
-		success:function(e){return e;},
-		error:function(e){console.log("ERROR");return e;}
-	}).responseText;
+function Ajax(url,async=false){
+	var tmp=++tsum;
+	$.ajax({
+		async:async,method:"GET",url:url,data:{},success:function(e){tcount[tmp]=e;},
+		error:function(e){tcount[tmp]="Err";}
+	});
+	return tmp;
 }
 function show_pre(){$("#pageContent,#pre-bar").show();}
 function hide_pre(){$("#pageContent,#pre-bar").hide();}
@@ -46,46 +46,53 @@ function init_sub(){
 </form></div>`));
 	getsub();
 }
-var prolist=[],focpro;
+var prolist=[],focpro,promap={};
 function showpro(ID){$("#fc-problem-menu-"+ID).addClass("focpro");$("#fc-problem-"+ID+",#fc-bar-problem-"+ID).show();}
 function hidepro(ID){$("#fc-problem-menu-"+ID).removeClass("focpro");$("#fc-problem-"+ID+",#fc-bar-problem-"+ID).hide();}
 function show_pro(){$("#fc-problem,#fc-bar-problem").show();$("#fc-menu-problem").css("background-color","#AAAAAA");}
 function hide_pro(){$("#fc-problem,#fc-bar-problem").hide();$("#fc-menu-problem").css("background-color","white");}
-function getpro(url){
-	x=$(Ajax("/problemset/problem/"+url));
-	return [x.find(`.problem-statement`),x.find(`#sidebar`)];
-}
 function addpro(x,y){
-	$("#fc-problem-menu-add").before(`<li id="fc-problem-menu-`+x+y+`"><a>`+x+y+`</a><a style="bor">X</a></li>`);
-	var node=$("#fc-problem-menu-"+x+y).children();
-	$(node[0]).click(function(){
+	var tmp=Ajax("/problemset/problem/"+x+"/"+y,true),load=$(`<li id="fc-problem-memu-add-`+x+`"><a></a></li>`),loadstr="";
+	x+=y;promap[x]=1;$("#fc-problem-menu").append(load);
+	var t=setInterval(function(){
+		loadstr=loadstr.length===2?"":loadstr+".";load.find("a").html("Loading "+x+loadstr);
+		if(tcount[tmp]===void 0)return;
+		load.remove();
+		if(tcount[tmp]==="Err"){delete promap[x];alert("添加题目"+x+"失败");}
+		var pro=$(tcount[tmp]);pro=[pro.find(`.problem-statement`),pro.find(`#sidebar`)];
+		clearInterval(t);tcount[tmp]=void 0;promap[x]=0;
+		$("#fc-problem-menu-add").before(`<li id="fc-problem-menu-`+x+`"><a>`+x+`</a><a style="bor">X</a></li>`);
+		var node=$("#fc-problem-menu-"+x).children();
+		$(node[0]).click(function(){
+			if(focpro!==void 0)hidepro(focpro);
+			showpro(this.innerHTML);focpro=this.innerHTML;
+		});
+		$(node[1]).click(function(){
+			var fa=$(this).parent(),ID=fa.children()[0].innerHTML,pos=prolist.indexOf(ID);
+			delete promap[prolist[pos]];prolist.splice(pos,1);
+			if(focpro===ID){
+				prolist.splice(pos,1);
+				if(pos===prolist.length)--pos;
+				if(pos!==-1){focpro=prolist[pos];showpro(focpro);}
+				else focpro=void 0;
+			}
+			fa.remove();$("#fc-problem-"+ID).remove();
+		});
+		$("#fc-problem-contain").append(pro[0].attr("id","fc-problem-"+x));
+		$("#fc-bar-problem").append(pro[1].attr("id","fc-bar-problem-"+x));
 		if(focpro!==void 0)hidepro(focpro);
-		showpro(this.innerHTML);focpro=this.innerHTML;
-	});
-	$(node[1]).click(function(){
-		var fa=$(this).parent(),ID=fa.children()[0].innerHTML;
-		if(focpro===ID){
-			var pos=prolist.indexOf(ID);prolist.splice(pos,1);
-			if(pos===prolist.length)--pos;
-			if(pos!==-1){focpro=prolist[pos];showpro(focpro);}
-			else focpro=void 0;
-		}
-		fa.remove();$("#fc-problem-"+ID).remove();
-	});
-	var pro=getpro(x+"/"+y);
-	$("#fc-problem-contain").append(pro[0].attr("id","fc-problem-"+x+y));
-	$("#fc-bar-problem").append(pro[1].attr("id","fc-bar-problem-"+x+y));
-	if(focpro!==void 0)hidepro(focpro);
-	showpro(x+y);focpro=x+y;prolist.push(focpro);
-	MathJax.Hub.Queue(["Typeset", MathJax.Hub,"fc-problem-"+x+y]);
+		showpro(x);prolist.push(focpro=x);math.Hub.Queue(["Typeset",math.Hub,"fc-problem-"+x]);
+	},400);
 }
 function newpro(){
 	var ID=prompt("请输入题号");
 	if(ID===""||ID===null)return;
 	if(typeof ID!=="string"){alert("请输入正确的题号");return;}
-	var A=ID.substr(ID.length-1);ID=parseFloat(ID.substr(0,ID.length-1));
-	if(parseInt(ID)!==ID){alert("请输入正确的题号");return;}
-	addpro(ID,A);
+	if(promap[ID]===0){alert("该题目已在序列中");return;}
+	if(promap[ID]===1){alert("该题目正在添加中");return;}
+	var pnum=ID.substr(ID.length-1),pl=parseFloat(ID.substr(0,ID.length-1));
+	if(parseInt(pl)!==pl){alert("请输入正确的题号");return;}
+	addpro(pl,pnum);
 }
 function init_pro(){
 	$("#pageContent").after($(`<div id="fc-problem" class="content-with-sidebar" style="display:none;margin:1em;padding-top:1em;min-height:20em">
@@ -98,11 +105,12 @@ function init_pro(){
 		<li id="fc-problem-menu-add"><a>+add problem</a></li>
 	</ul>
 </div>
-<div class="problemindexholder">
-	<div class="ttypography" id="fc-problem-contain"></div>
-</div>
-</div>`));
-	var link=$("link"),sideCSS=false,statCSS;
+<div class="problemindexholder"><div class="ttypography" id="fc-problem-contain"></div></div></div>`));
+	$("#fc-problem-menu-add").hover(function(){
+		var x=$("#fc-problem-menu>.backLava");
+		if(x.length>0)x.remove();
+	});
+	var link=$("link"),sideCSS=false,statCSS=false;
 	for(var i=0;i<link.leng;++i){
 		switch($(link[i]).attr("href")){
 			case "//sta.codeforces.com/s/63369/css/sidebar-menu.css":sideCSS=true;break;
@@ -111,8 +119,7 @@ function init_pro(){
 	}
 	if(!sideCSS)$("head").append($(`<link rel="stylesheet" href="//sta.codeforces.com/s/37050/css/sidebar-menu.css"/>`));
 	if(!statCSS)$("head").append($(`<link rel="stylesheet" href="//sta.codeforces.com/s/31021/css/status.css"/>`));
-	$("#fc-bar-menu").after(`<div id="fc-bar-problem" style="display:none"></div>`);
-	$("#fc-problem-menu-add").click(newpro);
+	$("#fc-bar-menu").after(`<div id="fc-bar-problem" style="display:none"></div>`);$("#fc-problem-menu-add").click(newpro);
 }
 var eles={
 	"problem":{name:"查看题目",init:init_pro,func:function(){},hide:hide_pro,show:show_pro},
@@ -140,8 +147,7 @@ function showMain(){
 	$("#fc-menu").html(`<a href="javascript:;" id="fc-stop">停止使用Fast Codeforces</a>`);
 	$("#fc-stop").click(function(){
 		if(confirm("您确认要停止使用Fast Codeforces?")===false)return;
-		puts("using",false);alert("Fast Codeforces已停止");showLogin();
-		$("#fc-problem").remove();$("#fc-submit").remove();
+		puts("using",false);alert("Fast Codeforces已停止");showLogin();$("#fc-problem").remove();$("#fc-submit").remove();
 	});
 	for(var i=0;i<len;++i)CreateEle(list[i]);
 }
