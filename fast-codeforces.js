@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Fast-Codeforces-dev
 // @namespace   xcxxcx
-// @version     0.2.2
+// @version     0.2.3
 // @match       *://codeforces.com/*
 // @match       *://codeforc.es/*
 // @match       *://codeforces.ml/*
@@ -59,8 +59,11 @@ function addpro(x,y){
 		if(tcount[tmp]===void 0)return;
 		load.remove();
 		if(tcount[tmp]==="Err"){delete promap[x];alert("添加题目"+x+"失败");}
-		var pro=$(tcount[tmp]);pro=[pro.find(`.problem-statement`),pro.find(`#sidebar`)];
-		clearInterval(t);tcount[tmp]=void 0;promap[x]=0;
+		var pro=$(tcount[tmp]),len=pro.length,title;
+		for(var i=0;i<len;++i)if(pro[i].tagName==="TITLE"){title=pro[i].innerHTML;break;}
+		clearInterval(t);
+		if(title!=="Problem - "+x+" - Codeforces"){delete promap[x];alert("题目"+x+"不存在");return;}
+		pro=[pro.find(`.problem-statement`),pro.find(`#sidebar`)];tcount[tmp]=void 0;promap[x]=0;
 		$("#fc-problem-menu-add").before(`<li id="fc-problem-menu-`+x+`"><a>`+x+`</a><a style="bor">X</a></li>`);
 		var node=$("#fc-problem-menu-"+x).children();
 		$(node[0]).click(function(){

@@ -8,10 +8,6 @@ Fast Codeforces是xcxxcx编写的一个脚本安装后，您不需要刷新，�
 
 greasyfolk上的链接：<https://greasyfork.org/zh-CN/scripts/393752-fast-codeforces>
 
-已知Bug:
-
-+ 无法知道题目是否存在，在题目不存在时会出锅
-
 计划
 
 + 题目记录，避免关闭后丢失
