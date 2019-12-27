@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Fast-Codeforces-dev
 // @namespace   xcxxcx
-// @version     0.3.0
+// @version     0.3.1
 // @match       *://codeforces.com/*
 // @match       *://codeforc.es/*
 // @match       *://codeforces.ml/*
@@ -9,13 +9,21 @@
 // @require     https://code.jquery.com/jquery-3.4.1.min.js
 // @author      xcxxcx
 // ==/UserScript==
-let $=window.$,math=unsafeWindow.MathJax,JPar=JSON.parse,JStr=JSON.stringify;
+let $=window.$,math=unsafeWindow.MathJax;
+String.prototype.strfrl=function(c){
+	if(this.indexOf(c)===-1)return this;
+	return this.substr(0,this.indexOf(c));
+};
+String.prototype.strfrr=function(c){
+	if(this.indexOf(c)===-1)return this;
+	return this.substr(this.indexOf(c)+c.length);
+};
 function gets(dir){
 	if(("fc-"+dir)in localStorage===false||localStorage["fc-"+dir]==="undefined")return void 0;
-	return JPar(localStorage["fc-"+dir]);
+	return JSON.parse(localStorage["fc-"+dir]);
 }
 function puts(dir,val){
-	if(val!==void 0)localStorage["fc-"+dir]=JStr(val);
+	if(val!==void 0)localStorage["fc-"+dir]=JSON.stringify(val);
 	else localStorage["fc-"+dir]="undefined";
 }
 let user=$(".lang-chooser>div:eq(1)>a:eq(0)").html(),user_csrf=$("[name=X-Csrf-Token]").attr("content"),tcount=[],tsum=0;
@@ -29,6 +37,7 @@ function Get(url){
 }
 function show_pre(){$("#pageContent,#pre-bar").show();}
 function hide_pre(){$("#pageContent,#pre-bar").hide();}
+
 let menu;
 function default_set(){for(let i in localStorage)if(i.substr(0,3)==="fc-"&&i!=="fc-using"&&i!=="fc-version")delete localStorage[i];}
 function add_menu(ele){
@@ -54,37 +63,66 @@ function init_set(){
 <div class="header"><div class="title">设置</div></div><button type="button" style="color:red" id="fc-setting-default">恢复默认设置</button></div>`));
 	for(let i=0;i<len;++i)eles[list[i]].set();
 	$("#fc-setting-default").click(function(){
-		if(confirm("您确定要恢复默认设置")===false)return;
+		if(confirm("您确定要恢复默认设置?")===false)return;
 		Clear();default_set();showMain();alert("恢复默认设置成功");
 	});
 }
 function remove_set(){$("#fc-setting").remove();}
-let sta_default={interval:10000},sta_user=sta_default,sta_t;
-function get_sta(user,page=1,show=false){
-	let tmp={csrf_token:user_csrf,action:"toggleShowUnofficial"},load=$(`<a id="fc-status-load"></a>`),loadstr="";
-	if(show)tmp.showUnofficial="on";tmp=Ajax("/submissions/"+user+"/page/"+page,tmp,"POST");$("#fc-status-head").append(load);clearInterval(sta_t);
+
+let sta_default={auto_open:true,interval:10000},sta_user=sta_default,sta_t=0,sta_now;
+function get_sta(user,page=1,show=true){
+	let tmp={csrf_token:user_csrf,action:"toggleShowUnofficial"},load=$("#fc-status-load"),loadstr="";
+	clearInterval(sta_t);load.html("");
+	if(sta_now.user!==user||sta_now.page!==page||sta_now.show!==show)return;
+	if(show)tmp.showUnofficial="on";tmp=Ajax("/submissions/"+user+"/page/"+page,tmp,"POST");
 	sta_t=setInterval(function(){
-		loadstr=loadstr.length===2?"":loadstr+".";load.html("Loading"+loadstr);
+		loadstr=loadstr.length===2?"":loadstr+".";$("#fc-status-load").html("Loading"+loadstr);
 		if(tcount[tmp]===void 0)return;
-		clearInterval(sta_t);load.remove();
+		clearInterval(sta_t);load.html("");
 		if(tcount[tmp]===void 0){alert("出错了");return;}
 		let val=$(tcount[tmp]),tpage=val.find(".active").attr("pageindex");
+		if(val.find(".second-level-menu-list a:eq(0)").html().toLowerCase()!==user.toLowerCase()){alert("该用户不存在");return;}
 		if(tpage!=page&&(tpage!==void 0||page!=1)){alert("该记录不存在");return;}
-		val=val.find("#pageContent");val.children(":eq(0)").remove();val.children(":eq(0)").remove();
+		val=val.find("#pageContent");val.children(":eq(0)").remove();val.children(":eq(0)").remove();val.find(".pagination").remove();
 		$("#fc-status-main").html(val.html());
+		if(sta_user.interval>=0)setTimeout(function(){get_sta(user,page,show);},sta_user.interval);
 	},400);
 }
-function set_sta(){}
+function set_sta(){
+	$("#fc-setting-default").before(`<div><div class="section-title">提交记录设置</div>
+<input type="checkbox" id="fc-setting-status-auto_open"><span>是否自动打开自己的提交记录</span><br/>
+自动刷新间隔（不刷新为-1）：<input type="number" min="-1" value="`+sta_user.interval+`" id="fc-setting-status-interval"/>毫秒<br/>
+<button type="button" id="fc-setting-status-end">修改</button><hr/></div>`);
+	if(sta_user.auto_open)$("#fc-setting-status-auto_open").attr("checked","checked");
+	$("#fc-setting-status-end").click(function(){
+		var interval=parseInt($("#fc-setting-status-interval").val());
+		if(typeof interval!=="number"||interval!==interval){alert("自动刷新间隔应为大于等于-1的整数");return;}
+		if(interval<0)interval=1;$("#fc-setting-status-interval").val(interval);
+		sta_user={auto_open:$("#fc-setting-status-auto_open:checked").length===1,interval:interval};
+		puts("sta-user",sta_user);alert("修改成功");
+	});
+}
 function show_sta(){$("#fc-status").show();$("#fc-menu-status").css("background-color","#AAAAAA");}
 function hide_sta(){$("#fc-status").hide();$("#fc-menu-status").css("background-color","white");}
 function init_sta(){
+	sta_user=gets("sta-user");
+	if(sta_user===void 0)sta_user={};
+	for(let i in sta_default)if(!(i in sta_user))sta_user[i]=sta_default[i];
+	puts("sta-user",sta_user);
 	$("#pageContent").after($(`<div id="fc-status" class="fc-main" style="display:none"><div id="fc-status-head">
 用户：<input type="text" id="fc-status-user"value="`+user+`"/>&nbsp;&nbsp;&nbsp;页码：<input type="text" id="fc-status-page" value="1"/>&nbsp;&nbsp;&nbsp;
-<input type="checkbox" id="fc-status-show"/>show unofficial&nbsp;&nbsp;&nbsp;<button type="button" id="fc-status-button">查看</button>
-</div><div id="fc-status-main"></div></div>`));
-	$("#fc-status-button").click(function(){get_sta($("#fc-status-user").val(),$("#fc-status-page").val(),$("#fc-status-show:checked").length===1);});
+<input type="checkbox" id="fc-status-show"/ checked>show unofficial&nbsp;&nbsp;&nbsp;<button type="button" id="fc-status-see">查看</button>
+&nbsp;&nbsp;&nbsp;<button type="button" id="fc-status-stop">停止本次自动刷新</button>
+<a id="fc-status-load"></a></div><div id="fc-status-main"></div></div>`));
+	$("#fc-status-stop").click(function(){clearInterval(sta_t);$("#fc-status-load").html("");});
+	$("#fc-status-see").click(function(){
+		sta_now={user:$("#fc-status-user").val(),page:$("#fc-status-page").val(),show:$("#fc-status-show:checked").length===1};
+		get_sta(sta_now.user,sta_now.page,sta_now.show);
+	});
+	if(sta_user.auto_open){sta_now={user:user,page:1,show:true};get_sta(user);}
 }
 function remove_sta(){$("#fc-status").remove();}
+
 function set_sub(){}
 function show_sub(){$("#fc-submit").show();$("#fc-menu-submit").css("background-color","#AAAAAA");}
 function hide_sub(){$("#fc-submit").hide();$("#fc-menu-submit").css("background-color","white");}
@@ -102,17 +140,19 @@ function init_sub(){
 	getsub();
 }
 function remove_sub(){$("#fc-submit").remove();}
-let pro_default={mem:0},pro_user,prepro,prolist,focpro,promap={};
+
+let pro_default={mem:0,auto_open:false},pro_user,prepro,prolist,focpro,promap={};
 function set_pro(){
-	$("#fc-setting-default").before($(`<div><div class="section-title" class="fc-setting-problem">题目设置</div>
+	$("#fc-setting-default").before($(`<div><div class="section-title">题目设置</div>
 <p><span>上一次未关闭的题目是否记录下来，是否自动打开：</span>
 <select id="fc-setting-problem-memory">
-	<option value="0">否</option>
-	<option value="1">记录下来，但我自己决定是否打开上次题目</option>
-	<option value="2">是</option>
-</select></p><button type="button" id="fc-setting-problem-end">修改</button><hr/></div>`));
+	<option value="0">否</option><option value="1">记录下来，但我自己决定是否打开上次题目</option><option value="2">是</option>
+</select></p><input type="checkbox" id="fc-setting-problem-auto_open"/><span>当点击题目链接时自动打开</span><br/>
+<button type="button" id="fc-setting-problem-end">修改</button><hr/></div>`));
+	if(pro_user.auto_open)$("#fc-setting-problem-auto_open").attr("checked","checked");
 	$("#fc-setting-problem-end").click(function(){
-		alert("修改成功");pro_user.mem=$("#fc-setting-problem-memory>option:selected").val();puts("pro-user",pro_user);
+		pro_user={mem:$("#fc-setting-problem-memory>option:selected").val(),auto_open:$("#fc-setting-problem-auto_open:checked").length===1};
+		puts("pro-user",pro_user);alert("修改成功");
 	});
 	$("#fc-setting-problem-memory>option:eq("+pro_user.mem+")").attr("selected","selected");
 }
@@ -160,9 +200,9 @@ function newpro(ID){
 	addpro(pl,pnum);
 }
 function init_pro(){
-	let i;pro_user=gets("pro-user");
+	pro_user=gets("pro-user");
 	if(pro_user===void 0)pro_user={};
-	for(i in pro_default)if(!(i in pro_user))pro_user[i]=pro_default[i];
+	for(let i in pro_default)if(!(i in pro_user))pro_user[i]=pro_default[i];
 	puts("pro-user",pro_user);prepro=gets("pro-list");
 	$("#pageContent").after($(`<div id="fc-problem" class="fc-main" style="display:none">
 <div class="second-level-menu">
@@ -174,10 +214,20 @@ function init_pro(){
 	$("#fc-problem-menu-close").click(function(){Change("problem");});$("#fc-problem-menu-add").click(function(){newpro(prompt());});
 	$("#fc-problem-menu-add").hover(function(){let x=$("#fc-problem-menu>.backLava");if(x.length>0)x.remove();});
 	$("#fc-bar-menu").after(`<div id="fc-bar-problem" style="display:none"></div>`);
-	if(pro_user.mem==2||(pro_user.mem==1&&prepro.length>0&&confirm("您上次浏览的题目未关闭，确定重新加载吗？")))for(i=0;i<prepro.length;++i)newpro(prepro[i]);
+	if(pro_user.mem==2||pro_user.mem==1&&prepro.length>0&&confirm("您上次浏览的题目未关闭，要重新加载吗？"))for(let i=0;i<prepro.length;++i)newpro(prepro[i]);
 	else puts("pro-list",[]);
+	if(pro_user.auto_open){$("a").click(function(){
+		let url=$(this).attr("href");
+		if(url==null)return true;
+		let protrol=url.strfrl("://");url=url.strfrr("://");let domain=url.strfrl("/");url=url.strfrr("/");
+		if(protrol!==url&&protrol!=="http"&&protrol!=="https")return true;
+		if(!url.match(/^problemset\/problem\/[1-9][0-9]*\/[A-Z]$/)&&!url.match(/^contest\/[1-9][0-9]*\/problem\/[A-Z]$/))return true;
+		if(domain!==""&&domain!=="codeforces.com"&&domain!=="codeforc.es"&&domain!=="codeforces.ml")return true;
+		Change("problem");newpro(url.match(/[1-9][0-9]*/)[0]+"/"+url.match(/[A-Z]/)[0]);return false;
+	});}
 }
 function remove_pro(){$("#fc-problem").remove();$("#fc-bar-problem").remove();}
+
 let eles={
 	"problem":{name:"查看题目",init:init_pro,remove:remove_pro,hide:hide_pro,show:show_pro,set:set_pro,js:[],css:["sidebar-menu","status"]},
 	"submit":{name:"提交代码",init:init_sub,remove:remove_sub,hide:hide_sub,show:show_sub,set:set_sub,js:[],css:[]},
@@ -224,6 +274,7 @@ function showMain(){
 	for(let i=0;i<len;++i)if(list[i]!=="setting")CreateEle(list[i]);
 	if(list.indexOf("setting"))CreateEle("setting");
 }
+
 $(document).ready(function(){
 	if($("#sidebar").length===0)return;
 	let sidebar=$("#sidebar").html();
