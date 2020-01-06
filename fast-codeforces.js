@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Fast-Codeforces-dev
 // @namespace   xcxxcx
-// @version     0.3.1
+// @version     0.3.1.1
 // @match       *://codeforces.com/*
 // @match       *://codeforc.es/*
 // @match       *://codeforces.ml/*
@@ -95,7 +95,7 @@ function set_sta(){
 <button type="button" id="fc-setting-status-end">修改</button><hr/></div>`);
 	if(sta_user.auto_open)$("#fc-setting-status-auto_open").attr("checked","checked");
 	$("#fc-setting-status-end").click(function(){
-		var interval=parseInt($("#fc-setting-status-interval").val());
+		let interval=parseInt($("#fc-setting-status-interval").val());
 		if(typeof interval!=="number"||interval!==interval){alert("自动刷新间隔应为大于等于-1的整数");return;}
 		if(interval<0)interval=1;$("#fc-setting-status-interval").val(interval);
 		sta_user={auto_open:$("#fc-setting-status-auto_open:checked").length===1,interval:interval};
@@ -114,7 +114,7 @@ function init_sta(){
 <input type="checkbox" id="fc-status-show"/ checked>show unofficial&nbsp;&nbsp;&nbsp;<button type="button" id="fc-status-see">查看</button>
 &nbsp;&nbsp;&nbsp;<button type="button" id="fc-status-stop">停止本次自动刷新</button>
 <a id="fc-status-load"></a></div><div id="fc-status-main"></div></div>`));
-	$("#fc-status-stop").click(function(){clearInterval(sta_t);$("#fc-status-load").html("");});
+	$("#fc-status-stop").click(function(){sta_now={};clearInterval(sta_t);$("#fc-status-load").html("");});
 	$("#fc-status-see").click(function(){
 		sta_now={user:$("#fc-status-user").val(),page:$("#fc-status-page").val(),show:$("#fc-status-show:checked").length===1};
 		get_sta(sta_now.user,sta_now.page,sta_now.show);
@@ -147,7 +147,7 @@ function set_pro(){
 <p><span>上一次未关闭的题目是否记录下来，是否自动打开：</span>
 <select id="fc-setting-problem-memory">
 	<option value="0">否</option><option value="1">记录下来，但我自己决定是否打开上次题目</option><option value="2">是</option>
-</select></p><input type="checkbox" id="fc-setting-problem-auto_open"/><span>当点击题目链接时自动打开</span><br/>
+</select></p><input type="checkbox" id="fc-setting-problem-auto_open"/><span>点击题目链接时在"查看题目"中将其打开</span><br/>
 <button type="button" id="fc-setting-problem-end">修改</button><hr/></div>`));
 	if(pro_user.auto_open)$("#fc-setting-problem-auto_open").attr("checked","checked");
 	$("#fc-setting-problem-end").click(function(){
@@ -170,9 +170,9 @@ function addpro(x,y){
 		if(tcount[tmp]==="Err"){delete promap[x];alert("出错了！");return;}
 		let pro=$(tcount[tmp]),len=pro.length,title;
 		for(let i=0;i<len;++i)if(pro[i].tagName==="TITLE"){title=pro[i].innerHTML;break;}
-		if(title!=="Problem - "+x+" - Codeforces"){delete promap[x];alert("题目"+x+"不存在");return;}
+		if(title!=="Problem - "+x+" - Codeforces"&&title!=="Problem - "+x+" - Codeforces (Unofficial mirror site by GGAutomaton, accelerated for Chinese users)"){delete promap[x];alert("题目"+x+"不存在");return;}
 		pro=[pro.find(`.problem-statement`),pro.find(`#sidebar`)];tcount[tmp]=void 0;promap[x]=0;
-		$("#fc-problem-menu-add").before(`<li id="fc-problem-menu-`+x+`"><a>`+x+`</a><a style="bor">X</a></li>`);
+		$("#fc-problem-menu-add").before(`<li id="fc-problem-menu-`+x+`"><a>`+x+`</a><a>X</a></li>`);
 		let node=$("#fc-problem-menu-"+x).children();
 		$(node[0]).click(function(){if(focpro!==void 0)hidepro(focpro);showpro(this.innerHTML);focpro=this.innerHTML;});
 		$(node[1]).click(function(){
@@ -210,7 +210,13 @@ function init_pro(){
 		<li id="fc-problem-menu-add"><a>+add problem</a></li>
 		<li id="fc-problem-menu-close"><a>-hide window</a></li>
 	</ul>
-</div><div class="problemindexholder"><div class="ttypography" id="fc-problem-contain"></div></div></div>`));
+</div><div class="problemindexholder">
+<a href="javascript:;" id="fc-problem-submit" style="float:right">提交</a>
+<div class="ttypography" id="fc-problem-contain"></div></div></div>`));
+	$("#fc-problem-submit").click(function(){
+		Change("submit");$("#fc-submit [name=source]").focus();
+		if(focpro!==void 0)$("#fc-submit [name=submittedProblemCode]").val(focpro);
+	});
 	$("#fc-problem-menu-close").click(function(){Change("problem");});$("#fc-problem-menu-add").click(function(){newpro(prompt());});
 	$("#fc-problem-menu-add").hover(function(){let x=$("#fc-problem-menu>.backLava");if(x.length>0)x.remove();});
 	$("#fc-bar-menu").after(`<div id="fc-bar-problem" style="display:none"></div>`);
