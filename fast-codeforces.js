@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Fast-Codeforces-dev
 // @namespace   xcxxcx
-// @version     0.3.2
+// @version     0.3.3
 // @match       *://codeforces.com/*
 // @match       *://codeforc.es/*
 // @match       *://codeforces.ml/*
@@ -26,15 +26,7 @@ function puts(dir,val){
 	if(val!==void 0)localStorage["fc-"+dir]=JSON.stringify(val);
 	else localStorage["fc-"+dir]="undefined";
 }
-let user=$(".lang-chooser>div:eq(1)>a:eq(0)").html(),user_csrf=$("[name=X-Csrf-Token]").attr("content"),tcount=[],tsum=0;
-function Ajax(url,data={},type="GET"){
-	let tmp=++tsum;
-	$.ajax({type:type,url:url,data:data,success:function(e){tcount[tmp]=e;},error:function(e){tcount[tmp]="Err";}});
-	return tmp;
-}
-function Get(url){
-	return $.ajax({async:false,type:"GET",url:url,data:{},success:function(e){return e;},error:function(e){return e;}}).responseText;
-}
+let user=$(".lang-chooser>div:eq(1)>a:eq(0)").html(),user_csrf=$("[name=X-Csrf-Token]").attr("content");
 function show_pre(){$("#pageContent,#pre-bar").show();}
 function hide_pre(){$("#pageContent,#pre-bar").hide();}
 
@@ -70,24 +62,25 @@ function init_set(){
 }
 function remove_set(){$("#fc-setting").remove();}
 
-let sta_default={auto_open:true,interval:10000},sta_user,sta_t=0,sta_now;
-function get_sta(user,page=1,show=true){
-	let tmp={csrf_token:user_csrf,action:"toggleShowUnofficial"},load=$("#fc-status-load"),loadstr="";
+let sta_default={auto_open:true,interval:10000},sta_user,sta_t=0,sta_cnt=0;
+function get_sta(user,cnt,page=1,show=true){
+	let tmp={csrf_token:user_csrf,action:"toggleShowUnofficial"},load=$("#fc-status-load"),loadstr="",t=sta_t;
+	if(show)tmp.showUnofficial="on";
 	clearInterval(sta_t);load.html("");
-	if(sta_now.user!==user||sta_now.page!==page||sta_now.show!==show)return;
-	if(show)tmp.showUnofficial="on";tmp=Ajax("/submissions/"+user+"/page/"+page,tmp,"POST");
-	sta_t=setInterval(function(){
-		loadstr=loadstr.length===2?"":loadstr+".";$("#fc-status-load").html("Loading"+loadstr);
-		if(tcount[tmp]===void 0)return;
+	if(cnt!==sta_cnt)return;
+	sta_t=setInterval(function(){loadstr=loadstr.length===2?"":loadstr+".";$("#fc-status-load").html("Loading"+loadstr);},500);
+	$.ajax({url:"/submissions/"+user+"/page/"+page,type:"POST",data:tmp,error:function(e){alert("出错了");return;},
+	success:function(e){
 		clearInterval(sta_t);load.html("");
-		if(tcount[tmp]===void 0){alert("出错了");return;}
-		let val=$(tcount[tmp]),tpage=val.find(".active").attr("pageindex");
-		if(val.find(".second-level-menu-list a:eq(0)").html().toLowerCase()!==user.toLowerCase()){alert("该用户不存在");return;}
+		if(cnt!==sta_cnt)return;
+		let val=$(e),tpage=val.find(".active").attr("pageindex");
+		try{if(val.find(".second-level-menu-list a:eq(0)").html().toLowerCase()!==user.toLowerCase()){alert("该用户不存在");return;}}
+		catch(e){alert("该用户不存在");return;}
 		if(tpage!=page&&(tpage!==void 0||page!=1)){alert("该记录不存在");return;}
 		val=val.find("#pageContent");val.children(":eq(0)").remove();val.children(":eq(0)").remove();val.find(".pagination").remove();
 		$("#fc-status-main").html(val.html());
-		if(sta_user.interval>=0)setTimeout(function(){get_sta(user,page,show);},sta_user.interval);
-	},400);
+		if(sta_user.interval>=0)setTimeout(function(){get_sta(user,cnt,page,show);},sta_user.interval);
+	}});
 }
 function set_sta(){
 	$("#fc-setting-default").before(`<div><div class="section-title">提交记录设置</div><br/>
@@ -99,8 +92,7 @@ function set_sta(){
 		let interval=parseInt($("#fc-setting-status-interval").val());
 		if(typeof interval!=="number"||interval!==interval){alert("自动刷新间隔应为大于等于-1的整数");return;}
 		if(interval<0)interval=1;$("#fc-setting-status-interval").val(interval);
-		sta_user={auto_open:$("#fc-setting-status-auto_open:checked").length===1,interval:interval};
-		puts("sta-user",sta_user);alert("修改成功");
+		sta_user={auto_open:$("#fc-setting-status-auto_open:checked").length===1,interval:interval};puts("sta-user",sta_user);alert("修改成功");
 	});
 }
 function show_sta(){$("#fc-status").show();$("#fc-menu-status").css("background-color","#AAAAAA");}
@@ -115,12 +107,11 @@ function init_sta(){
 <input type="checkbox" id="fc-status-show"/ checked>show unofficial&nbsp;&nbsp;&nbsp;<button type="button" id="fc-status-see">查看</button>
 &nbsp;&nbsp;&nbsp;<button type="button" id="fc-status-stop">停止本次自动刷新</button>
 <a id="fc-status-load"></a></div><div id="fc-status-main"></div></div>`));
-	$("#fc-status-stop").click(function(){sta_now={};clearInterval(sta_t);$("#fc-status-load").html("");});
+	$("#fc-status-stop").click(function(){++sta_cnt;clearInterval(sta_t);$("#fc-status-load").html("");});
 	$("#fc-status-see").click(function(){
-		sta_now={user:$("#fc-status-user").val(),page:$("#fc-status-page").val(),show:$("#fc-status-show:checked").length===1};
-		get_sta(sta_now.user,sta_now.page,sta_now.show);
+		get_sta($("#fc-status-user").val(),++sta_cnt,$("#fc-status-page").val(),$("#fc-status-show:checked").length===1);
 	});
-	if(sta_user.auto_open){sta_now={user:user,page:1,show:true};get_sta(user);}
+	if(sta_user.auto_open)get_sta(user,0);
 }
 function remove_sta(){$("#fc-status").remove();}
 
@@ -128,23 +119,24 @@ let sub_default={auto_open:true},sub_user;
 function set_sub(){
 	$("#fc-setting-default").before(`<div><div class="section-title">提交设置</div><br/>
 <span>点击提交时：</span><select name="auto_open" id="fc-setting-submit-auto_open">
-<option value="true">若开启了“查看状态”，则进行跳转</option><option value="false">打开“status”窗口</option>
+<option value="true">若开启了“查看状态”，则进行跳转</option><option value="false">打开“status”页面</option>
 </select><span class="fc-care">*</span><br/><br/><button type="button" id="fc-setting-submit-end">修改</button><hr/></div>`);
 	$("#fc-setting-submit-auto_open>option:eq("+(sub_user.auto_open===true?0:1)+")").attr("selected","selected");
 	$("#fc-setting-submit-end").click(function(){
-		sub_user={auto_open:$("#fc-setting-submit-auto_open>option:selected").val()==="true"};
-		puts("sub-user",sub_user);
+		sub_user={auto_open:$("#fc-setting-submit-auto_open>option:selected").val()==="true"};puts("sub-user",sub_user);
 	});
 }
 function show_sub(){$("#fc-submit").show();$("#fc-menu-submit").css("background-color","#AAAAAA");}
 function hide_sub(){$("#fc-submit").hide();$("#fc-menu-submit").css("background-color","white");}
-function getsub(){
+function getsub(func){
 	let sub=gets("sub");
-	if(sub!==void 0){$("#fc-submit-form").html(sub);return;}
-	sub=$(Get("/problemset/submit")).find(".submit-form");sub.find("tr:nth-child(5)").remove();
-	sub.find(".submit").attr("id","fc-submit-button");
-	sub.find(".aceEditorTd").html(`<textarea style="width:600px;height:300px;resize:none" name="source"></textarea><br/>`);
-	sub=sub.html();puts("sub",sub);$("#fc-submit-form").html(sub);
+	if(sub!==void 0){$("#fc-submit-form").html(sub);func();return;}
+	$.ajax({type:"GET",data:{},url:"/problemset/submit",error:function(e){alert("获取提交界面失败");},
+	success:function(e){
+		sub=$(e).find(".submit-form");sub.find("tr:nth-child(5)").remove();sub.find(".submit").attr("id","fc-submit-button");
+		sub.find(".aceEditorTd").html(`<textarea style="width:600px;height:300px;resize:none" name="source"></textarea><br/>`);
+		sub=sub.html();puts("sub",sub);$("#fc-submit-form").html(sub);func();
+	}});
 }
 function init_sub(){
 	sub_user=gets("sub-user");
@@ -152,22 +144,21 @@ function init_sub(){
 	for(let i in sub_default)if(!(i in sub_user))sub_user[i]=sub_default[i];
 	puts("sub-user",sub_user);
 	$("#pageContent").after($(`<div id="fc-submit" class="fc-main" style="display:none">
-<div id="fc-submit-form" method="post" action="/problemset/submit?csrf_token=`+user_csrf+`" enctype="multipart/form-data" target="_blank">
-</div></div>`));
-	getsub();
+<div id="fc-submit-form" method="post" action="/problemset/submit?csrf_token=`+user_csrf+`" enctype="multipart/form-data" target="_blank"></div></div>`));
+	getsub(function(){
 	$("#fc-submit-button").click(function(){
 		$("#fc-submit .fc-care").remove();
 		if($("#fc-submit [name=submittedProblemCode]").val()===""){
 			$("#fc-submit .error__submittedProblemIndex").html(`<span class="fc-care">Choose the problem</span>`);return false;}
 		if($("#fc-submit [name=source]").val()===""){
 			$("#fc-submit .aceEditorTd").append(`<span class="fc-care">Put you source into the textarea</span>`);return false;}
-		if(!sub_user.auto_open)return true;
-		Ajax(`/problemset/submit?csrf_token=`+user_csrf,{
+		if(!sub_user.auto_open||$.inArray("status",list)<0)return true;
+		$.ajax({type:"POST",url:`/problemset/submit?csrf_token=`+user_csrf,error:function(e){alert("提交失败");return;},data:{
 			csrf_token:user_csrf,action:"submitSolutionFormSubmitted",submittedProblemCode:$("#fc-submit [name=submittedProblemCode]").val(),
-			programTypeId:$("#fc-submit [name=programTypeId]>option:selected").val(),source:$("#fc-submit [name=source]").val()},"POST");
+			programTypeId:$("#fc-submit [name=programTypeId]>option:selected").val(),source:$("#fc-submit [name=source]").val()}});
 		Change("status");$("#fc-status-user").val(user);$("#fc-status-page").val(1);$("#fc-status-show").attr("checked","checked");
 		$("#fc-status-see").click();document.documentElement.scrollTop=0;return false;
-	});
+	});});
 }
 function remove_sub(){$("#fc-submit").remove();}
 
@@ -190,25 +181,22 @@ function hidepro(ID){$("#fc-problem-menu-"+ID).removeClass("focpro");$("#fc-prob
 function show_pro(){$("#fc-problem,#fc-bar-problem").show();$("#fc-menu-problem").css("background-color","#AAAAAA");}
 function hide_pro(){$("#fc-problem,#fc-bar-problem").hide();$("#fc-menu-problem").css("background-color","white");}
 function addpro(x,y){
-	let tmp=Ajax("/problemset/problem/"+x+"/"+y),load=$(`<li id="fc-problem-memu-add-`+x+y+`"><a></a></li>`),loadstr="";
-	x+=y;promap[x]=1;$("#fc-problem-menu").append(load);prolist=[];promap={};
-	let t=setInterval(function(){
-		loadstr=loadstr.length===2?"":loadstr+".";load.find("a").html("Loading "+x+loadstr);
-		if(tcount[tmp]===void 0)return;
+	let load=$(`<li id="fc-problem-memu-add-`+x+y+`"><a></a></li>`),loadstr="";
+	promap[x+y]=1;$("#fc-problem-menu").append(load);
+	let t=setInterval(function(){loadstr=loadstr.length===2?"":loadstr+".";load.find("a").html("Loading "+x+y+loadstr);},400);
+	$.ajax({type:"GET",data:{},url:"/contest/"+x+"/problem/"+y,error:function(e){clearInterval(t);load.remove();alert("出错了！");},
+	success:function(e){
 		clearInterval(t);load.remove();
-		if(tcount[tmp]==="Err"){delete promap[x];alert("出错了！");return;}
-		let pro=$(tcount[tmp]),len=pro.length,title;
+		let pro=$(e),len=pro.length,title;unsafeWindow.pro=pro;console.log(pro.find("#sidebar>div:eq(0) a:eq(0)").attr("href"));
 		for(let i=0;i<len;++i)if(pro[i].tagName==="TITLE"){title=pro[i].innerHTML;break;}
-		if(title!=="Problem - "+x+" - Codeforces"&&title!=="Problem - "+x+
-		   " - Codeforces (Unofficial mirror site by GGAutomaton, accelerated for Chinese users)"){delete promap[x];alert("题目"+x+"不存在");return;}
-		pro=[pro.find(`.problem-statement`),pro.find(`#sidebar`)];tcount[tmp]=void 0;promap[x]=0;
+		if((title!=="Problem - "+y+" - Codeforces (Unofficial mirror site by GGAutomaton, accelerated for Chinese users)"&&title!=="Problem - "+y+
+			" - Codeforces")||pro.find("#sidebar>div:eq(0) a:eq(0)").attr("href")!=="/contest/"+x){delete promap[x+y];alert("题目"+x+y+"不存在");return;}
+		x+=y;pro=[pro.find(`.problem-statement`),pro.find(`#sidebar`)];promap[x]=0;
 		$("#fc-problem-menu-add").before(`<li id="fc-problem-menu-`+x+`"><a>`+x+`</a><a>X</a></li>`);
-		let node=$("#fc-problem-menu-"+x).children();
-		$(node[0]).click(function(){if(focpro!==void 0)hidepro(focpro);showpro(this.innerHTML);focpro=this.innerHTML;});
-		$(node[1]).click(function(){
+		$("#fc-problem-menu-"+x+">a:eq(0)").click(function(){if(focpro!==void 0)hidepro(focpro);showpro(this.innerHTML);focpro=this.innerHTML;});
+		$("#fc-problem-menu-"+x+">a:eq(1)").click(function(){
 			let fa=$(this).parent(),ID=fa.children()[0].innerHTML,pos=prolist.indexOf(ID);delete promap[prolist[pos]];prolist.splice(pos,1);
 			if(focpro===ID){
-				prolist.splice(pos,1);
 				if(pos===prolist.length)--pos;
 				if(pos!==-1){focpro=prolist[pos];showpro(focpro);}
 				else focpro=void 0;
@@ -218,7 +206,7 @@ function addpro(x,y){
 		$("#fc-problem-contain").append(pro[0].attr("id","fc-problem-"+x));$("#fc-bar-problem").append(pro[1].attr("id","fc-bar-problem-"+x));
 		if(focpro!==void 0)hidepro(focpro);
 		showpro(x);prolist.push(focpro=x);math.Queue(["Typeset",math,"fc-problem-"+x]);puts("pro-list",prolist);
-	},400);
+	}});
 }
 function newpro(ID){
 	if(ID===""||ID===null)return;
@@ -230,7 +218,7 @@ function newpro(ID){
 	addpro(pl,pnum);
 }
 function init_pro(){
-	pro_user=gets("pro-user");
+	pro_user=gets("pro-user");prolist=[];promap={};
 	if(pro_user===void 0)pro_user={};
 	for(let i in pro_default)if(!(i in pro_user))pro_user[i]=pro_default[i];
 	puts("pro-user",pro_user);prepro=gets("pro-list");
@@ -240,6 +228,7 @@ function init_pro(){
 </ul></div><div class="problemindexholder">
 <a href="javascript:;" id="fc-problem-submit" style="float:right">提交</a><div class="ttypography" id="fc-problem-contain"></div></div></div>`));
 	$("#fc-problem-submit").click(function(){
+		if($.inArray("submit",list)<0){alert("请先在设置中打开“快速提交”功能");return;}
 		Change("submit");$("#fc-submit [name=source]").focus();
 		if(focpro!==void 0)$("#fc-submit [name=submittedProblemCode]").val(focpro);
 	});
@@ -253,8 +242,8 @@ function init_pro(){
 		if(url==null)return true;
 		let protrol=url.frl("://");url=url.frr("://");let domain=url.frl("/");url=url.frr("/");
 		if(protrol!==url&&protrol!=="http"&&protrol!=="https")return true;
-		if(!url.match(/^problemset\/problem\/[1-9][0-9]*\/[A-Z]$/)&&!url.match(/^contest\/[1-9][0-9]*\/problem\/[A-Z]$/))return true;
 		if(domain!==""&&domain!=="codeforces.com"&&domain!=="codeforc.es"&&domain!=="codeforces.ml")return true;
+		if(!url.match(/^problemset\/problem\/[1-9][0-9]*\/[A-Z]$/)&&!url.match(/^contest\/[1-9][0-9]*\/problem\/[A-Z]$/))return true;
 		Change("problem");newpro(url.match(/[1-9][0-9]*/)[0]+"/"+url.match(/[A-Z]/)[0]);return false;
 	});}
 }
@@ -279,7 +268,7 @@ function CreateEle(id){
 	for(let i=0;i<css.length;++i){if(css_ready.indexOf(css[i])==-1){
 		$("head").append($(`<link rel="stylesheet" href="//sta.codeforces.com/s/`+day+`/css/`+css[i]+`.css"/>`));css_ready.push(css[i]);
 	}}
-	$("#fc-stop").before($(`<a style="border-radius:3px">&nbsp;&nbsp;<span id="fc-menu-`+id+`">`+obj.name+`</span>
+	$("#fc-stop").before($(`<a>&nbsp;&nbsp;<span id="fc-menu-`+id+`" style="border-radius:3px">`+obj.name+`</span>
 <span style="float:right">&#8635;</span></a><br/>`));
 	$("#fc-menu-"+id).click(function(){Change(this.id.substr(8));});
 	$("#fc-menu-"+id).siblings().click(function(){
@@ -292,8 +281,7 @@ function Clear(id){
 	for(let i=0;i<len;++i)eles[list[i]].remove();
 }
 function showLogin(){
-	Clear();
-	$("#fc-menu").html(`<a href="javascript:;" id="fc-start">开始使用Fast Codeforces</a>`);
+	Clear();$("#fc-menu").html(`<a href="javascript:;" id="fc-start">开始使用Fast Codeforces</a>`);
 	$("#fc-start").click(function(){
 		if(confirm("Fast Codeforces需要使用您的CSRF-token，您确定要授权吗?")===false)return;
 		puts("using",true);alert("授权成功");showMain();
@@ -339,5 +327,5 @@ $(document).ready(function(){
 	else if(gets("using"))showMain();
 	else showLogin();
 });
-let version="0.3.2";
+let version="0.3.3";
 if(gets("version")!==version){setTimeout(function(){alert("Fast Codeforces的版本已经更新了，赶快去设置看看呗");},100);puts("version",version);}
