@@ -11,3 +11,22 @@ greasyfolk上的链接：<https://greasyfork.org/zh-CN/scripts/393752-fast-codef
 计划
 
 + 向比赛进军！
+
+## 更新记录
+
++ v0.3
+	* v0.3.4 修复众多bug，将提交从problemset切换到contest
+	* v0.3.3 重写了AJAX，修复bug
+	* v0.3.2 修改提交方式
+	* v0.3.1.1 修复bug
+	* v0.3.1 增加了提交记录的自动更新
+	* v0.3.0 增加了提交记录的查看
++ v0.2
+	* v0.2.5 增加了目录设置
+	* v0.2.4 增加了设置和题目保存
+	* v0.2.3 修复了无法判断题目是否存在的BUG.
+	* v0.2.2 将AJAX更新为了异步并修复了题目列表的BUG。
+	* v0.2.1 更新使用CSRF-token的声明
+	* v0.2.0 增加了提交题目的功能
++ v0.1
+	* Fast Codeforces诞生
