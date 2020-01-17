@@ -6,7 +6,11 @@ Fast Codeforces是xcxxcx编写的一个脚本。安装后，您不需要刷新�
 
 详细使用请查看[Manual](https://github.com/xcx-xcx/fast-codeforces/blob/master/manual.md)
 
+[Bug List](https://github.com/xcx-xcx/fast-codeforces/blob/master/bug.md)
+
 greasyfolk上的链接：<https://greasyfork.org/zh-CN/scripts/393752-fast-codeforces>
+
+**在脚本更新后，最好能够清除缓存**
 
 计划
 
@@ -15,6 +19,7 @@ greasyfolk上的链接：<https://greasyfork.org/zh-CN/scripts/393752-fast-codef
 ## 更新记录
 
 + v0.3
+	* v0.3.5 添加Bug List,Fixed Bug1，使用Codeforces原生函数美化界面，解决Violentmonket jQuery冲突问题
 	* v0.3.4 修复众多bug，将提交从problemset切换到contest
 	* v0.3.3 重写了AJAX，修复bug
 	* v0.3.2 修改提交方式

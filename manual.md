@@ -31,6 +31,6 @@
 |js|所需javascript文件|
 |css|所需css文件|
 
-注意这些文件必须以`//sta.codeforces.com/s/day/type/file.type`为结构，其中`type`为`js/css`，`day`为当日的标号，`file`为你所需的文件的名称。**注意对象中只用填写`file`，不需要额外文件则需添加空数组。**
+注意这些文件必须以`//sta.codeforces.com/s/day/type/file.type`为结构，其中`type`为`js/css`，`day`为一个自然数，`file`为你所需的文件的名称。**注意对象中只用填写`file`，不需要额外文件则需添加空数组。**
 
 完成这些后在设置中进行设置即可。
