@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Fast-Codeforces-dev
 // @namespace   xcxxcx
-// @version     0.3.5
+// @version     0.3.5.1
 // @match       *://codeforces.com/*
 // @match       *://codeforc.es/*
 // @match       *://codeforces.ml/*
@@ -9,7 +9,11 @@
 // @require     https://code.jquery.com/jquery-3.4.1.min.js
 // @author      xcxxcx
 // ==/UserScript==
-const $=window.$.noConflict(true),math=unsafeWindow.MathJax.Hub,Codeforces=unsafeWindow.Codeforces,Alert=Codeforces.alert;
+let $=window.$.noConflict(true),math=unsafeWindow.MathJax.Hub,Codeforces=unsafeWindow.Codeforces,Alert=Codeforces.alert;
+$.default=(obj,val)=>{
+	for(let i in val)if(!(i in obj))obj[i]=val[i];
+	return obj;
+};
 String.prototype.frl=function(c){
 	if(this.indexOf(c)===-1)return this;
 	return this.substr(0,this.indexOf(c));
@@ -19,160 +23,140 @@ String.prototype.frr=function(c){
 	return this.substr(this.indexOf(c)+c.length);
 };
 String.prototype.replaceAll=function(s1,s2){return this.split(s1).join(s2);};
-function obj_default(obj,val){
-	for(let i in val)if(!(i in obj))obj[i]=val[i];
-	return obj;
-}
-function gets(dir,val){
+let gets=(dir,val)=>{
 	if(("fc-"+dir)in localStorage===false||localStorage["fc-"+dir]==="undefined")return val;
 	return JSON.parse(localStorage["fc-"+dir]);
-}
-function puts(dir,val){
+},puts=(dir,val)=>{
 	if(val!==void 0)localStorage["fc-"+dir]=JSON.stringify(val);
 	else localStorage["fc-"+dir]="undefined";
-}
-function noop(){}
-function Confirm(str,fy,fn=noop,wy="是",wn="否"){Codeforces.confirm(str,fy,fn,wy,wn);}
-function GetTitle(val){return val.substr(0,val.indexOf("</title>")).substr(val.indexOf("<title>")+7);}
-let version="v0.3.5",fc=obj_default(gets("fc",{}),{version:version,list:[],using:false});puts("fc",fc);
+},noop=()=>{},
+Confirm=(str,fy,fn=noop,wy="确定",wn="取消")=>{Codeforces.confirm(str,fy,fn,wy,wn);$("#fc-input").focus();},
+GetTitle=val=>{return val.substr(0,val.indexOf("</title>")).substr(val.indexOf("<title>")+7);},version="v0.3.5.1",fc=$.default(gets("fc",{}),{version:version,list:[],using:false});puts("fc",fc);
 
-let user=$(".lang-chooser>div:eq(1)>a:eq(0)").html(),user_csrf=$("[name=X-Csrf-Token]").attr("content");
-function show_pre(){$("#pageContent,#pre-bar").show();}
-function hide_pre(){$("#pageContent,#pre-bar").hide();}
+let user=$(".lang-chooser>div:eq(1)>a:eq(0)").html(),user_csrf=$("[name=X-Csrf-Token]").attr("content"),
+show_pre=()=>{$("#pageContent,#pre-bar").show();},hide_pre=()=>{$("#pageContent,#pre-bar").hide();}
 
-let menu,fc_need=["fc","pro-user","sub-user","sta-user"];
-function Clear(){
+let menu,fc_need=["fc","pro-user","sub-user","sta-user"],Clear=()=>{
 	for(let i in localStorage){
 		if(i.substr(0,3)!=="fc-")continue;
 		let j=i.substr(3);
 		if(fc_need.indexOf(j)<0)delete localStorage[i];
 	}
-}
-function default_set(){for(let i in localStorage)if(i.substr(0,3)==="fc-"&&i!=="fc-fc")delete localStorage[i];}
-function add_menu(ele){
+},default_set=()=>{for(let i in localStorage)if(i.substr(0,3)==="fc-"&&i!=="fc-fc")delete localStorage[i];},
+add_menu=ele=>{
 	$("#fc-setting-menu-add").append(`<li><a id="fc-setting-menu-`+ele+`">`+eles[ele].name+`</a></li>`);
 	$("#fc-setting-menu-"+ele).click(function(){let ID=this.id.substr(16);$(this).parent().remove(),menu.splice(menu.indexOf(ID),1),sub_menu(ID);});
-}
-function sub_menu(ele){
+},
+sub_menu=ele=>{
 	$("#fc-setting-menu-sub").append(`<li><a id="fc-setting-menu-`+ele+`">`+eles[ele].name+`</a></li>`);
 	$("#fc-setting-menu-"+ele).click(function(){let ID=this.id.substr(16);$(this).parent().remove(),menu.push(ID),add_menu(ID);});
-}
-function set_menu(){
+},
+set_menu=()=>{
 	menu=list.slice();
 	$("#fc-setting-clear").before($(`<div><div class="section-title">目录设置<span class="fc-care">*</span></div><br/><h6>当前目录</h6>
-<ul id="fc-setting-menu-add"></ul><h6>剩余目录</h6><ul id="fc-setting-menu-sub"></ul>
-<button id="fc-setting-menu-end" class="fc-care">修改</button><hr/></div>`));
+<ul id="fc-setting-menu-add"></ul><h6>剩余目录</h6><ul id="fc-setting-menu-sub"></ul><button id="fc-setting-menu-end" class="fc-care">修改</button><hr/></div>`));
 	for(let i=0;i<len;++i)add_menu(list[i]);
 	for(let i in eles)if(list.indexOf(i)===-1)sub_menu(i);
-	$("#fc-setting-menu-end").click(function(){Reload(),fc.list=menu,puts("fc",fc),showMain(),Alert("修改成功");});
-}
-function show_set(){$("#fc-setting").show(),$("#fc-menu-setting").css("background-color","#AAAAAA");}
-function hide_set(){$("#fc-setting").hide(),$("#fc-menu-setting").css("background-color","white");}
-function init_set(){
+	$("#fc-setting-menu-end").click(()=>{
+		Confirm("您确定要修改目录吗?",()=>{Reload(),fc.list=menu,puts("fc",fc),showMain(),Alert("修改成功");});
+	});
+},show_set=()=>{$("#fc-setting").show(),$("#fc-menu-setting").css("background-color","#AAAAAA");},
+hide_set=()=>{$("#fc-setting").hide(),$("#fc-menu-setting").css("background-color","white");},
+init_set=()=>{
 	$("#pageContent").after($(`<div id="fc-setting" class="fc-main problem-statement" style="display:none">
 <div class="header"><div class="title">设置</div><div>带有<span class="fc-care">*</span>的选项在修改后，需要重新加载才能生效。</div></div>
 <div><div class="section-title">Fast Codeforces版本:`+version+`</div></div><hr/>
 <button type="button" class="fc-care" id="fc-setting-clear">清理缓存</button><br/><br/>
 <button type="button" class="fc-care" id="fc-setting-default">恢复默认设置</button></div>`));
 	for(let i=0;i<len;++i)eles[list[i]].set();
-	$("#fc-setting-clear").click(function(){Confirm("您确定要清除缓存?",function(){Clear(),Alert("清除缓存成功");});});
-	$("#fc-setting-default").click(function(){
-		Confirm("您确定要恢复默认设置?请先保存好您的文件",function(){Reload(),default_set(),showMain(),Alert("恢复默认设置成功");});
-	});
-}
-function remove_set(){$("#fc-setting").remove();}
+	$("#fc-setting-clear").click(()=>{Confirm("您确定要清除缓存?",()=>{Clear(),Alert("清除缓存成功");});});
+	$("#fc-setting-default").click(()=>{Confirm("您确定要恢复默认设置?请先保存好您的文件",()=>{Reload(),default_set(),showMain(),Alert("恢复默认设置成功");});});
+},remove_set=()=>{$("#fc-setting").remove();};
 
-let sta_default={auto_open:true,interval:10000},sta_user,sta_t=0,sta_cnt=0;
-function get_sta(user,cnt,page=1,show=true){
+let sta_default={auto_open:true,interval:5000},sta_user,sta_t=0,sta_cnt=0,
+get_sta=(user,cnt,page=1,show=true)=>{
 	let tmp={csrf_token:user_csrf,action:"toggleShowUnofficial"},load=$("#fc-status-load"),loadstr="",t=sta_t;
 	if(show)tmp.showUnofficial="on";
 	clearInterval(sta_t),load.html("");
 	if(cnt!==sta_cnt)return;
-	sta_t=setInterval(function(){loadstr=loadstr.length===2?"":loadstr+".",$("#fc-status-load").html("Loading"+loadstr);},500);
-	$.ajax({url:"/submissions/"+user+"/page/"+page,type:"POST",data:tmp,error:function(e){Alert("出错了");return;},
-	success:function(e){
+	sta_t=setInterval(()=>{loadstr=loadstr.length===2?"":loadstr+".",$("#fc-status-load").html("Loading"+loadstr);},500);
+	$.ajax({url:"/submissions/"+user+"/page/"+page,type:"POST",data:tmp,error:e=>{Alert("出错了");return;},
+	success:e=>{
 		clearInterval(sta_t),load.html("");
 		if(cnt!==sta_cnt)return;
 		let val=$(e),tpage=val.find(".active").attr("pageindex");
 		try{if(val.find(".second-level-menu-list a:eq(0)").html().toLowerCase()!==user.toLowerCase()){Alert("该用户不存在");return;}}
 		catch(e){Alert("该用户不存在");return;}
 		if(tpage!=page&&(tpage!==void 0||page!=1)){Alert("该记录不存在");return;}
-		val=val.find("#pageContent"),val.children(":eq(0)").remove(),val.children(":eq(0)").remove(),val.find(".pagination").remove();
-		$("#fc-status-main").html(val.html());
-		if(sta_user.interval>=0)setTimeout(function(){get_sta(user,cnt,page,show);},sta_user.interval);
+		val=val.find("#pageContent"),val.children(":eq(0)").remove(),val.children(":eq(0)").remove(),val.find(".pagination").remove(),$("#fc-status-main").html(val.html());
+		if(sta_user.interval>=0)setTimeout(()=>{get_sta(user,cnt,page,show);},sta_user.interval);
 	}});
-}
-function set_sta(){
+},
+set_sta=()=>{
 	$("#fc-setting-clear").before(`<div><div class="section-title">提交记录设置</div><br/>
 <input type="checkbox" id="fc-setting-status-auto_open"><span>是否自动打开自己的提交记录</span><br/><br/>
 自动刷新间隔（不刷新为-1）：<input type="number" min="-1" value="`+sta_user.interval+`" id="fc-setting-status-interval"/>毫秒<br/><br/>
 <button type="button" id="fc-setting-status-end">修改</button><hr/></div>`);
 	if(sta_user.auto_open)$("#fc-setting-status-auto_open").attr("checked","checked");
-	$("#fc-setting-status-end").click(function(){
+	$("#fc-setting-status-end").click(()=>{
 		let interval=parseInt($("#fc-setting-status-interval").val());
 		if(typeof interval!=="number"||interval!==interval){Alert("自动刷新间隔应为大于等于-1的整数");return;}
 		if(interval<0)interval=1;$("#fc-setting-status-interval").val(interval);
 		sta_user={auto_open:$("#fc-setting-status-auto_open:checked").length===1,interval:interval},puts("sta-user",sta_user),Alert("修改成功");
 	});
-}
-function show_sta(){$("#fc-status").show(),$("#fc-menu-status").css("background-color","#AAAAAA");}
-function hide_sta(){$("#fc-status").hide(),$("#fc-menu-status").css("background-color","white");}
-function init_sta(){
-	sta_user=obj_default(gets("sta-user",{}),sta_default),puts("sta-user",sta_user);
+},
+show_sta=()=>{$("#fc-status").show(),$("#fc-menu-status").css("background-color","#AAAAAA");},
+hide_sta=()=>{$("#fc-status").hide(),$("#fc-menu-status").css("background-color","white");},
+init_sta=()=>{
+	sta_user=$.default(gets("sta-user",{}),sta_default),puts("sta-user",sta_user);
 	$("#pageContent").after($(`<div id="fc-status" class="fc-main" style="display:none"><div id="fc-status-head">
 用户：<input type="text" id="fc-status-user" value="`+user+`"/>&nbsp;&nbsp;&nbsp;页码：<input type="text" id="fc-status-page" value="1"/>&nbsp;&nbsp;&nbsp;
 <input type="checkbox" id="fc-status-show"/ checked>show unofficial&nbsp;&nbsp;&nbsp;<button type="button" id="fc-status-see">查看</button>
 &nbsp;&nbsp;&nbsp;<button type="button" id="fc-status-stop">停止本次自动刷新</button>
 <a id="fc-status-load"></a></div><div id="fc-status-main"></div></div>`));
-	$("#fc-status-stop").click(function(){++sta_cnt,clearInterval(sta_t),$("#fc-status-load").html("");});
-	$("#fc-status-see").click(function(){get_sta($("#fc-status-user").val(),++sta_cnt,$("#fc-status-page").val(),$("#fc-status-show:checked").length===1);});
+	$("#fc-status-stop").click(()=>{++sta_cnt,clearInterval(sta_t),$("#fc-status-load").html("");});
+	$("#fc-status-see").click(()=>{get_sta($("#fc-status-user").val(),++sta_cnt,$("#fc-status-page").val(),$("#fc-status-show:checked").length===1);});
 	if(sta_user.auto_open)get_sta(user,0);
-}
-function remove_sta(){$("#fc-status").remove();}
+},
+remove_sta=()=>{$("#fc-status").remove();};
 
-let sub_default={auto_open:true},sub_user;
-function set_sub(){
+let sub_default={auto_open:true},sub_user,
+set_sub=()=>{
 	$("#fc-setting-clear").before(`<div><div class="section-title">提交设置</div><br/>
 <span>点击提交时：</span><select name="auto_open" id="fc-setting-submit-auto_open">
 <option value="true">若开启了“查看状态”，则进行跳转</option><option value="false">打开“status”页面</option>
 </select><span class="fc-care">*</span><br/><br/><button type="button" id="fc-setting-submit-end">修改</button><hr/></div>`);
 	$("#fc-setting-submit-auto_open>option:eq("+(sub_user.auto_open===true?0:1)+")").attr("selected","selected");
-	$("#fc-setting-submit-end").click(function(){
-		sub_user={auto_open:$("#fc-setting-submit-auto_open>option:selected").val()==="true"},puts("sub-user",sub_user);
-	});
-}
-function show_sub(){$("#fc-submit").show(),$("#fc-menu-submit").css("background-color","#AAAAAA");}
-function hide_sub(){$("#fc-submit").hide(),$("#fc-menu-submit").css("background-color","white");}
-function getsub(func){
+	$("#fc-setting-submit-end").click(()=>{sub_user={auto_open:$("#fc-setting-submit-auto_open>option:selected").val()==="true"},puts("sub-user",sub_user);});
+},
+show_sub=()=>{$("#fc-submit").show(),$("#fc-menu-submit").css("background-color","#AAAAAA");},
+hide_sub=()=>{$("#fc-submit").hide(),$("#fc-menu-submit").css("background-color","white");},
+getsub=func=>{
 	let sub=gets("sub");
 	if(sub!==void 0){$("#fc-submit-form").html(sub),func();return;}
-	$.ajax({type:"GET",data:{},url:"/problemset/submit",error:function(e){Alert("获取提交界面失败");},
-	success:function(e){
+	$.ajax({type:"GET",data:{},url:"/problemset/submit",error:e=>{Alert("获取提交界面失败");},
+	success:e=>{
 		sub=$(e).find(".submit-form"),sub.find("tr:nth-child(5)").remove(),sub.find(".submit").attr("id","fc-submit-button");
 		sub.find(".aceEditorTd").html(`<textarea style="width:600px;height:300px;resize:none" name="source"></textarea><br/>`);
-		sub.find("[name=submittedProblemCode]").attr("name","submittedProblemIndex");
-		sub=sub.html(),puts("sub",sub),$("#fc-submit-form").html(sub),func();
+		sub.find("[name=submittedProblemCode]").attr("name","submittedProblemIndex"),sub=sub.html(),puts("sub",sub),$("#fc-submit-form").html(sub),func();
 	}});
-}
-function init_sub(){
-	sub_user=obj_default(gets("sub-user",{}),sub_default),puts("sub-user",sub_user);
+},
+init_sub=()=>{
+	sub_user=$.default(gets("sub-user",{}),sub_default),puts("sub-user",sub_user);
 	$("#pageContent").after($(`<div id="fc-submit" class="fc-main" style="display:none">
 <form id="fc-submit-form" method="post" enctype="multipart/form-data" target="_blank"></form></div>`));
-	getsub(function(){
-	$("#fc-submit-button").click(function(){
+	getsub(()=>{$("#fc-submit-button").click(()=>{
 		$("#fc-submit .fc-care").remove();let val=$("#fc-submit [name=submittedProblemIndex]").val();
 		if(val===""){$("#fc-submit .error__submittedProblemIndex").html(`<span class="fc-care">Choose the problem</span>`);return false;}
 		let cid=parseInt(val.substr(0,val.length-1)),id=val.substr(-1);
-		if(cid!==cid||!id.match(/[a-zA-Z]/)){
-			$("#fc-submit .error__submittedProblemIndex").html(`<span class="fc-care">Input a legal problem</span>`);return false;}
-		if($("#fc-submit [name=source]").val()===""){
-			$("#fc-submit .aceEditorTd").append(`<span class="fc-care">Put you source into the textarea</span>`);return false;}
+		if(cid!==cid||!id.match(/[a-zA-Z]/)){$("#fc-submit .error__submittedProblemIndex").html(`<span class="fc-care">Input a legal problem</span>`);return false;}
+		if($("#fc-submit [name=source]").val()===""){$("#fc-submit .aceEditorTd").append(`<span class="fc-care">Put you source into the textarea</span>`);return false;}
 		$("#fc-submit [name=submittedProblemIndex]").val(id);
 		if(!sub_user.auto_open||list.indexOf("status")<0){$("#fc-submit-form").attr("action",`/contest/`+cid+`/submit?csrf_token=`+user_csrf);return true;}
-		$.ajax({type:"POST",url:`/contest/`+cid+`/submit?csrf_token=`+user_csrf,error:function(e){Alert("提交失败");return;},data:{
+		$.ajax({type:"POST",url:`/contest/`+cid+`/submit?csrf_token=`+user_csrf,error:e=>{Alert("提交失败");return;},data:{
 			csrf_token:user_csrf,action:"submitSolutionFormSubmitted",submittedProblemIndex:$("#fc-submit [name=submittedProblemIndex]").val(),
 			programTypeId:$("#fc-submit [name=programTypeId]>option:selected").val(),source:$("#fc-submit [name=source]").val()},
-			success:function(e){
+			success:e=>{
 				let sub=$(e);
 				if(!sub.find(`#sidebar a[href="/contest/`+cid+`"]`).length){Alert("该题目不存在!");return;}
 				if(sub.find(".error.for__source").length){Alert("您已经提交过相同的代码!");return;}
@@ -182,32 +166,32 @@ function init_sub(){
 		Change("status"),$("#fc-status-user").val(user),$("#fc-status-page").val(1),$("#fc-status-show").attr("checked","checked");
 		$("#fc-status-see").click(),document.documentElement.scrollTop=0;return false;
 	});});
-}
-function remove_sub(){$("#fc-submit").remove();}
+},
+remove_sub=()=>{$("#fc-submit").remove();};
 
-let pro_default={mem:0,auto_open:false},pro_user,prepro,prolist,focpro,promap={};
-function set_pro(){
+let pro_default={mem:0,auto_open:false},pro_user,prepro,prolist,focpro,promap={},
+set_pro=()=>{
 	$("#fc-setting-clear").before($(`<div><div class="section-title">题目设置</div><br/>
 <p><span>上一次未关闭的题目是否打开：</span><select id="fc-setting-problem-memory">
 	<option value="0">否</option><option value="1">我自己决定是否打开</option><option value="2">自动打开</option>
 </select></p><input type="checkbox" id="fc-setting-problem-auto_open"/><span>点击题目链接时在"查看题目"中将其打开<span class="fc-care">*</span></span>
 <br/><br/><button type="button" id="fc-setting-problem-end">修改</button><hr/></div>`));
 	if(pro_user.auto_open)$("#fc-setting-problem-auto_open").attr("checked","checked");
-	$("#fc-setting-problem-end").click(function(){
+	$("#fc-setting-problem-end").click(()=>{
 		pro_user={mem:$("#fc-setting-problem-memory>option:selected").val(),auto_open:$("#fc-setting-problem-auto_open:checked").length===1};
 		puts("pro-user",pro_user),Alert("修改成功");
 	});
 	$("#fc-setting-problem-memory>option:eq("+pro_user.mem+")").attr("selected","selected");
-}
-function showpro(ID){$("#fc-problem-menu-"+ID).addClass("focpro"),$("#fc-problem-"+ID+",#fc-bar-problem-"+ID).show();}
-function hidepro(ID){$("#fc-problem-menu-"+ID).removeClass("focpro"),$("#fc-problem-"+ID+",#fc-bar-problem-"+ID).hide();}
-function show_pro(){$("#fc-problem,#fc-bar-problem").show(),$("#fc-menu-problem").css("background-color","#AAAAAA");}
-function hide_pro(){$("#fc-problem,#fc-bar-problem").hide(),$("#fc-menu-problem").css("background-color","white");}
-function addpro(x,y){
+},
+showpro=ID=>{$("#fc-problem-menu-"+ID).addClass("focpro"),$("#fc-problem-"+ID+",#fc-bar-problem-"+ID).show();},
+hidepro=ID=>{$("#fc-problem-menu-"+ID).removeClass("focpro"),$("#fc-problem-"+ID+",#fc-bar-problem-"+ID).hide();},
+show_pro=()=>{$("#fc-problem,#fc-bar-problem").show(),$("#fc-menu-problem").css("background-color","#AAAAAA");},
+hide_pro=()=>{$("#fc-problem,#fc-bar-problem").hide(),$("#fc-menu-problem").css("background-color","white");},
+addpro=(x,y)=>{
 	let load=$(`<li id="fc-problem-memu-add-`+x+y+`"><a></a></li>`),loadstr="";promap[x+y]=1,$("#fc-problem-menu").append(load);
-	let t=setInterval(function(){loadstr=loadstr.length===2?"":loadstr+".",load.find("a").html("Loading "+x+y+loadstr);},400);
-	$.ajax({type:"GET",data:{},url:"/contest/"+x+"/problem/"+y,error:function(e){clearInterval(t),load.remove(),Alert("出错了！");},
-	success:function(e){
+	let t=setInterval(()=>{loadstr=loadstr.length===2?"":loadstr+".",load.find("a").html("Loading "+x+y+loadstr);},400);
+	$.ajax({type:"GET",data:{},url:"/contest/"+x+"/problem/"+y,error:e=>{clearInterval(t),load.remove(),Alert("出错了！");},
+	success:e=>{
 		clearInterval(t),load.remove();let pro=$(e),title=GetTitle(e);
 		if((title!=="Problem - "+y+" - Codeforces (Unofficial mirror site by GGAutomaton, accelerated for Chinese users)"&&title!=="Problem - "+y+
 			" - Codeforces")||!pro.find(`#sidebar a[href="/contest/`+x+`"]`).length){delete promap[x+y],Alert("题目"+x+y+"不存在");return;}
@@ -216,9 +200,9 @@ function addpro(x,y){
 			let $copy=$(`<div title="Copy" data-clipboard-target="#`+preId+`" id="`+cpyId+`" class="input-output-copier">Copy</div>`);
 			$(this).parent().find("pre").attr("id", preId),$(this).append($copy);
 			let clipboard=new unsafeWindow.Clipboard('#'+cpyId,{
-				text:function(trigger){return Codeforces.filterClipboardText(document.querySelector('#'+preId).innerText);}
+				text:trigger=>{return Codeforces.filterClipboardText(document.querySelector('#'+preId).innerText);}
 			}),isInput=$(this).parent().hasClass("input");
-			clipboard.on('success',function(e){Alert("The example "+(isInput?"input":"output")+" has been copied into the clipboard"),e.clearSelection();});
+			clipboard.on('success',e=>{Alert("The example "+(isInput?"input":"output")+" has been copied into the clipboard");e.clearSelection();});
 		});
 		x+=y,pro=[pro.find(`.problem-statement`),pro.find(`#sidebar`)],promap[x]=0;
 		$("#fc-problem-menu-add").before(`<li id="fc-problem-menu-`+x+`"><a>`+x+`</a><a>X</a></li>`);
@@ -236,8 +220,8 @@ function addpro(x,y){
 		if(focpro!==void 0)hidepro(focpro);
 		showpro(x),prolist.push(focpro=x),math.Queue(["Typeset",math,"fc-problem-"+x]),puts("pro-list",prolist);
 	}});
-}
-function newpro(ID){
+},
+newpro=ID=>{
 	if(ID===""||ID===null)return;
 	if(typeof ID!=="string"){Alert("请输入正确的题号");return;}
 	if(promap[ID]===0){Alert("该题目已在序列中");return;}
@@ -245,27 +229,25 @@ function newpro(ID){
 	let id=ID.substr(ID.length-1),cid=parseFloat(ID.substr(0,ID.length-1));
 	if(parseInt(cid)!==cid||!id.match(/[a-zA-Z]/)){Alert("请输入正确的题号");return;}
 	addpro(cid,id);
-}
-function pre_pro(){for(let i=0;i<prepro.length;++i)newpro(prepro[i]);}
-function init_pro(){
-	pro_user=obj_default(gets("pro-user",{}),pro_default),prolist=[],promap={},puts("pro-user",pro_user),prepro=gets("pro-list");
+},
+pre_pro=()=>{for(let i=0;i<prepro.length;++i)newpro(prepro[i]);},
+init_pro=()=>{
+	pro_user=$.default(gets("pro-user",{}),pro_default),prolist=[],promap={},puts("pro-user",pro_user),prepro=gets("pro-list");
 	$("#pageContent").after($(`<div id="fc-problem" class="fc-main" style="display:none"><div class="second-level-menu">
 <ul class="second-level-menu-list" id="fc-problem-menu">
 	<li id="fc-problem-menu-add"><a>+add problem</a></li><li id="fc-problem-menu-close"><a>-hide window</a></li>
 </ul></div><div class="problemindexholder">
 <a href="javascript:;" id="fc-problem-submit" style="float:right">提交</a><div class="ttypography" id="fc-problem-contain"></div></div></div>`));
-	$("#fc-problem-submit").click(function(){
+	$("#fc-problem-submit").click(()=>{
 		if(list.indexOf("submit")<0){Alert("请先在设置中打开“快速提交”功能");return;}
 		Change("submit"),$("#fc-submit [name=source]").focus();
 		if(focpro!==void 0)$("#fc-submit [name=submittedProblemIndex]").val(focpro);
 	});
-	$("#fc-problem-menu-close").click(function(){Change("problem");});
-	$("#fc-problem-menu-add").click(function(){Confirm(`请输入题目编号:<input id="fc-input"/>`,function(){newpro($("#fc-input").val());},noop,"确定","取消");});
-	$("#fc-problem-menu-add").hover(function(){let x=$("#fc-problem-menu>.backLava");if(x.length>0)x.remove();});
-	$("#fc-bar-menu").after(`<div id="fc-bar-problem" style="display:none"></div>`);
+	$("#fc-problem-menu-close").click(()=>{Change("problem");});$("#fc-bar-menu").after(`<div id="fc-bar-problem" style="display:none"></div>`);
+	$("#fc-problem-menu-add").click(()=>{Confirm(`请输入题目编号:<input id="fc-input"/>`,()=>{newpro($("#fc-input").val());});});
+	$("#fc-problem-menu-add").hover(()=>{let x=$("#fc-problem-menu>.backLava");if(x.length>0)x.remove();});
 	if(pro_user.mem==2)pre_pro();
-	else if(pro_user.mem==1&&prepro.length>0)
-	  Confirm("您上次浏览的题目未关闭，要重新加载吗?",function(){Change("problem"),pre_pro();},function(){puts("pro-list",[])});
+	else if(pro_user.mem==1&&prepro.length>0)Confirm("您上次浏览的题目未关闭，要重新加载吗?",()=>{Change("problem"),pre_pro();},()=>{puts("pro-list",[]);});
 	else puts("pro-list",[]);
 	if(pro_user.auto_open)$("a").click(function(){
 		let url=$(this).attr("href");
@@ -276,61 +258,57 @@ function init_pro(){
 		if(!url.match(/^problemset\/problem\/[1-9][0-9]*\/[A-Z]$/)&&!url.match(/^contest\/[1-9][0-9]*\/problem\/[A-Z]$/))return true;
 		Change("problem"),newpro(url.match(/[1-9][0-9]*/)[0]+"/"+url.match(/[A-Z]/)[0]);return false;
 	});
-}
-function remove_pro(){$("#fc-problem").remove(),$("#fc-bar-problem").remove();}
+},
+remove_pro=()=>{$("#fc-problem").remove(),$("#fc-bar-problem").remove();};
 
 let eles={
 	"problem":{name:"查看题目",init:init_pro,remove:remove_pro,hide:hide_pro,show:show_pro,set:set_pro,js:[],css:["sidebar-menu","status"]},
 	"submit":{name:"提交代码",init:init_sub,remove:remove_sub,hide:hide_sub,show:show_sub,set:set_sub,js:[],css:[]},
 	"status":{name:"查看状态",init:init_sta,remove:remove_sta,hide:hide_sta,show:show_sta,set:set_sta,js:["facebox"],css:["status","facebox"]},
 	"setting":{name:"设置",init:init_set,remove:remove_set,hide:hide_set,show:show_set,set:set_menu,js:[],css:[]},
-},list,len,ele="pre",css_ready=[],js_ready=[];
-function Change(ID){
+},list,len,ele="pre",css_ready=[],js_ready=[],
+Change=ID=>{
 	if(ele===ID)eles[ID].hide(),show_pre(),ele="pre";
 	else if(ele==="pre")hide_pre(),eles[ID].show(),ele=ID;
 	else eles[ele].hide(),eles[ID].show(),ele=ID;
-}
-function CreateEle(id){
+},
+CreateEle=id=>{
 	let obj=eles[id],js=obj.js,css=obj.css;obj.init();
-	for(let i=0;i<js.length;++i)if(js_ready.indexOf(js[i])==-1)
-		$("head").append($(`<script src="//sta\.codeforces\.com/s/0/js/`+js[i]+`.js"></script>`)),js_ready.push(js[i]);
-	for(let i=0;i<css.length;++i)if(css_ready.indexOf(css[i])==-1)
-		$("head").append($(`<link rel="stylesheet" href="//sta\.codeforces\.com/s/0/css/`+css[i]+`.css"/>`)),css_ready.push(css[i]);
+	for(let i=0;i<js.length;++i)if(js_ready.indexOf(js[i])==-1)$("head").append($(`<script src="//sta\.codeforces\.com/s/0/js/`+js[i]+`.js"></script>`)),js_ready.push(js[i]);
+	for(let i=0;i<css.length;++i)if(css_ready.indexOf(css[i])==-1)$("head").append($(`<link rel="stylesheet" href="//sta\.codeforces\.com/s/0/css/`+css[i]+`.css"/>`)),css_ready.push(css[i]);
 	$("#fc-stop").before($(`<a>&nbsp;&nbsp;<span id="fc-menu-`+id+`" style="border-radius:3px">`+obj.name+`</span>
 <span style="float:right">&#8635;</span></a><br/>`));
 	$("#fc-menu-"+id).click(function(){Change(this.id.substr(8));});
-	$("#fc-menu-"+id).siblings().click(function(){
+	$("#fc-menu-"+id).siblings().click(()=>{
 		if(ele===id)Change(id);
 		obj.remove(),obj.init(),Alert("加载成功！");
 	});
-}
-function Reload(id){
+},
+Reload=()=>{
 	if(ele!=="pre")Change(ele);
 	for(let i=0;i<len;++i)eles[list[i]].remove();
-}
-function showLogin(){
+},
+showLogin=()=>{
 	Reload(),$("#fc-menu").html(`<a href="javascript:;" id="fc-start">开始使用Fast Codeforces</a>`);
-	$("#fc-start").click(function(){
-		Confirm("Fast Codeforces需要使用您的CSRF-token，您确定要授权吗?",function(){fc.using=true,puts("fc",fc),Alert("授权成功"),showMain();});
-	});
-}
-function showMain(){
+	$("#fc-start").click(()=>{Confirm("Fast Codeforces需要使用您的CSRF-token，您确定要授权吗?",()=>{fc.using=true,puts("fc",fc),Alert("授权成功"),showMain();});});
+},
+showMain=()=>{
 	list=fc.list;
 	if(list.length===0)list=["problem","submit","status","setting"];
 	if(list.indexOf("setting")===-1)list.push("setting");
 	fc.list=list,puts("fc",fc),len=list.length,ele="pre",$("#fc-menu").html(`<a href="javascript:;" id="fc-stop">停止使用Fast Codeforces</a>`);
-	$("#fc-stop").click(function(){
-		Confirm("您确认要停止使用Fast Codeforces?",function(){fc.using=false,puts("fc",fc),Alert("Fast Codeforces已停止"),showLogin();});
-	});
+	$("#fc-stop").click(()=>{Confirm("您确认要停止使用Fast Codeforces?",()=>{fc.using=false,puts("fc",fc),Alert("Fast Codeforces已停止"),showLogin();});});
 	for(let i=0;i<len;++i)if(list[i]!=="setting")CreateEle(list[i]);
 	if(list.indexOf("setting")>=0)CreateEle("setting");
-}
+};
 
-$(function(){
+$(()=>{
 	if($("#sidebar").length===0)return;
 	let sidebar=$("#sidebar").html();
 	$("#sidebar").html(`<div id="fc-bar">
 <style>
+	.input-output-copier{font-size:1.2rem;float:right;color:#888 !important;cursor:pointer;border:1px solid rgb(185, 185, 185);padding:3px;margin:1px;line-height:1.1rem;text-transform:none;}
+	.input-output-copier:hover{background-color:#def;}
 	.fc-main{margin-right:22em !important;margin:1em;padding-top:1em;min-height:20em;}#fc-menu>a>span{cursor:pointer}
 	.focpro{background-color:grey;}#fc-problem-menu>li{border-radius:12px;}.fc-care{color:red}
 </style>
@@ -359,5 +337,5 @@ $(function(){
 	if($(".header-bell").length===0)$("#fc-menu").html(`<span>请登录后再使用！</span>`);
 	else if(fc.using)showMain();
 	else showLogin();
-	if(version!==fc.version)fc.version=version,puts("fc",fc),setTimeout(function(){Alert("Fast Codeforces的版本已经更新了，赶快去设置看看呗");},500);
+	if(version!==fc.version)fc.version=version,puts("fc",fc),setTimeout(()=>{Alert("Fast Codeforces的版本已经更新了，赶快去设置看看呗");},500);
 });
