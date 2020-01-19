@@ -19,6 +19,7 @@ greasyfolk上的链接：<https://greasyfork.org/zh-CN/scripts/393752-fast-codef
 ## 更新记录
 
 + v0.3
+	* v0.3.5.2 优化结构
 	* v0.3.5.1 Fixed Bug 3
 	* v0.3.5 添加Bug List,Fixed Bug1，使用Codeforces原生函数美化界面，Fixed Bug 2
 	* v0.3.4 修复众多bug，将提交从problemset切换到contest
