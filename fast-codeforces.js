@@ -1,14 +1,14 @@
 // ==UserScript==
-// @name        Fast-Codeforces-dev
+// @name        Fast-Codeforces
 // @namespace   xcxxcx
-// @version     0.3.5.2
+// @version     0.3.5.3
 // @match       *://codeforces.com/*
 // @match       *://codeforces.ml/*
 // @description Make Codeforces convenient
 // @require     https://code.jquery.com/jquery-3.4.1.min.js
 // @author      xcxxcx
 // ==/UserScript==
-(function(){
+unsafeWindow.onload=()=>{
 let $=window.$.noConflict(true),math=unsafeWindow.MathJax.Hub,Codeforces=unsafeWindow.Codeforces;
 $.default=(obj,val)=>{
 	for(let i in val)if(!(i in obj))obj[i]=val[i];
@@ -32,7 +32,7 @@ let gets=(dir,val)=>{
 },noop=()=>{},Alert=Codeforces.alert,
 Confirm=(str,fy,fn=noop,wy="确定",wn="取消")=>{Codeforces.confirm(str,fy,fn,wy,wn);$("#fc-input").focus();},
 GetTitle=val=>{return val.substr(0,val.indexOf("</title>")).substr(val.indexOf("<title>")+7);},
-version="v0.3.5.2",fc=$.default(gets("fc",{}),{version:version,list:[],using:false}),
+version="v0.3.5.3",fc=$.default(gets("fc",{}),{version:version,list:[],using:false}),
 user=$(".lang-chooser>div:eq(1)>a:eq(0)").html(),user_csrf=$("[name=X-Csrf-Token]").attr("content"),
 show_pre=()=>{$("#pageContent,#pre-bar").show();},hide_pre=()=>{$("#pageContent,#pre-bar").hide();},
 menu,fc_need=["fc","pro-user","sub-user","sta-user"],Clear=()=>{
@@ -333,4 +333,4 @@ $(()=>{
 	else if(fc.using)showMain();
 	else showLogin();
 	if(version!==fc.version)fc.version=version,puts("fc",fc),setTimeout(()=>{Alert("Fast Codeforces的版本已经更新了，赶快去设置看看呗");},500);
-});})();
+});};

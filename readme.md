@@ -4,9 +4,13 @@ Fast Codeforces是xcxxcx编写的一个脚本。安装后，您不需要刷新�
 
 **Fast Codeforces需要使用您在Codeforces上的CSRF-token，并保证不作其它用途。**
 
-详细使用请查看[Manual](https://github.com/xcx-xcx/fast-codeforces/blob/master/manual.md)
++ [Manual in Github](https://github.com/xcx-xcx/fast-codeforces/blob/master/manual.md)
 
-[Bug List](https://github.com/xcx-xcx/fast-codeforces/blob/master/bug.md)
++ [Manual in Gitlab](https://gitlab.com/xcxxcx/fast-codeforces/-/blob/master/manual.md)
+
++ [Bug List in Github](https://github.com/xcx-xcx/fast-codeforces/blob/master/bug.md)
+
++ [Bug List in Gitlab](https://gitlab.com/xcxxcx/fast-codeforces/-/blob/master/bug.md)
 
 greasyfolk上的链接：<https://greasyfork.org/zh-CN/scripts/393752-fast-codeforces>
 
@@ -19,6 +23,7 @@ greasyfolk上的链接：<https://greasyfork.org/zh-CN/scripts/393752-fast-codef
 ## 更新记录
 
 + v0.3
+	* v0.3.5.3 一些小更新
 	* v0.3.5.2 优化结构
 	* v0.3.5.1 Fixed Bug 3
 	* v0.3.5 添加Bug List,Fixed Bug1，使用Codeforces原生函数美化界面，Fixed Bug 2
