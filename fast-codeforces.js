@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name        Fast-Codeforces
-// @namespace   xcxxcx
+// @namespace   xcxcli
 // @version     0.3.5.3
 // @match       *://codeforces.com/*
 // @match       *://codeforces.ml/*
 // @description Make Codeforces convenient
 // @require     https://code.jquery.com/jquery-3.4.1.min.js
-// @author      xcxxcx
+// @author      xcxcli
 // ==/UserScript==
 unsafeWindow.onload=()=>{
 let $=window.$.noConflict(true),math=unsafeWindow.MathJax.Hub,Codeforces=unsafeWindow.Codeforces;

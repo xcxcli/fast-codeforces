@@ -1,24 +1,32 @@
 ## Fast Codeforces
 
-Fast Codeforces是xcxxcx编写的一个脚本。安装后，您不需要刷新，只在一个页面中就可以快速浏览题目、快速提交代码。
+Fast Codeforces是xcxcli编写的一个脚本。安装后，您不需要刷新，只在一个页面中就可以快速浏览题目、快速提交代码。
 
 **Fast Codeforces需要使用您在Codeforces上的CSRF-token，并保证不作其它用途。**
 
-+ [Manual in Github](https://github.com/xcx-xcx/fast-codeforces/blob/master/manual.md)
-
-+ [Manual in Gitlab](https://gitlab.com/xcxxcx/fast-codeforces/-/blob/master/manual.md)
-
-+ [Bug List in Github](https://github.com/xcx-xcx/fast-codeforces/blob/master/bug.md)
-
-+ [Bug List in Gitlab](https://gitlab.com/xcxxcx/fast-codeforces/-/blob/master/bug.md)
-
-greasyfolk上的链接：<https://greasyfork.org/zh-CN/scripts/393752-fast-codeforces>
++ [greasyfork](https://greasyfork.org/zh-CN/scripts/393752-fast-codeforces)
++ [github](https://github.com/xcxcli/fast-codeforces)
++ [gitlab](https://gitlab.com/xcxcli/fast-codeforces)
 
 **在脚本更新后，最好能够清除缓存**
 
 计划
 
 + 向比赛进军！
+
+## 安装
+
+您需要先安装Tampermonkey、Violentmonkey、Greasemonkey之类的脚本插件。
+
+然后打开<https://greasyfork.org/zh-CN/scripts/393752-fast-codeforces>，点击“安装此脚本”。
+
+## 使用
+
+**Fast Codeforces需要使用您在Codeforces上的CSRF-token，并保证不作其它用途。**
+
+本脚本的使用并没有难度，您可以自己探索。注意在浏览器清理浏览数据后，您的设置会丢失。
+
+**在脚本更新后，最好能够清除缓存**
 
 ## 更新记录
 
